@@ -74,19 +74,25 @@ Scene.all = { 'scene': new Scene('scene') };
 // HTTP static files & REST API.
 {
   var app = express();
+  app.get('/v1/scenes', function(req, res) {
+    res.send('[{"id": 1}, {"id": 2}]');
+  });
   app.use(express.static(path.join(__dirname, 'static')));
+  app.use(passport.initialize());
+  app.use(passport.session());
   app.listen(8000);
   // Go to authentification link
   app.get('/auth/facebook', passport.authenticate('facebook'));
 
   // Callback function after Facebook login
-  app.get('/auth/facebook/callback', passport.authenticate('facebook', {
-      successRedirect : '/',
-      failureRedirect : '/login'
-    }),
-    function(req, res) {
-      res.redirect('/');
-    });
+  app.get('/auth/facebook/callback',
+      passport.authenticate('facebook', {
+        successRedirect : '/',
+        failureRedirect : '/login'
+      }),
+      function(req, res) {
+        res.redirect('/');
+      });
 
   // Ensure the user is authenticated. If not, redirect to login
   function ensureAuthenticated(req, res, next) {
