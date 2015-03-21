@@ -75,6 +75,15 @@ angular.module('shapyEditor', ['ngCookies'])
 
         scene = new THREE.Scene();
 
+        // Add subtle blue ambient lighting.
+        var ambientLight = new THREE.AmbientLight(0x111111);
+        scene.add(ambientLight);
+    
+        // Add directional lighting.
+        var directionalLight = new THREE.DirectionalLight(0xffffff);
+        directionalLight.position.set(2, 3, 1).normalize();
+        scene.add(directionalLight);
+
         // Handle zooming.
         $elem.on('mousewheel', function(event) {
           var delta = event.originalEvent.wheelDelta;
@@ -154,7 +163,7 @@ angular.module('shapyEditor', ['ngCookies'])
               cubeMap[cube.id] 
                 = new THREE.Mesh(
                   new THREE.BoxGeometry(cube.size.x, cube.size.y, cube.size.z), 
-                  new THREE.MeshBasicMaterial( {color: 0x00ff00} ) 
+                  new THREE.MeshLambertMaterial( {color: 0xffffff} ) 
                 );
               cubeMap[cube.id].position.copy(cube.pos.clone());
               scene.add(cubeMap[cube.id]);
@@ -178,7 +187,7 @@ angular.module('shapyEditor', ['ngCookies'])
     this.sceneID = $routeParams['sceneID'];
     this.items = {
       0: new Cube(0,
-        {px: 0, py: 1, pz: 0}
+        {px: 0, py: 0, pz: 0, width: 20, height: 0.1, depth: 20}
       ),
       1: new Cube(1,
         {px: 0, py: 0, pz: 3}
