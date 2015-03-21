@@ -1,8 +1,7 @@
-
 var ZOOM_SPEED = 0.2;
+var ROT_SPEED = 0.01;
 
-
-angular.module('shapyEditor', [])
+angular.module('shapyEditor', ['ngCookies'])
   .directive('shapyCanvas', function() {
     return {
       restrict: 'E',
@@ -11,14 +10,26 @@ angular.module('shapyEditor', [])
       },
       link: function($scope, $elem) {
         var running = true;
-        
+
+        // Rotation vars.
+        var isMouseDown = false;
+        var onMouseDownX = 0;
+        var onMouseDownY = 0;
+        var onMouseDownRot = null;
+
         // Camera parameters.
-        var cameraDir = new THREE.Vector3(0, 0, -1);
         var cameraPos = new THREE.Vector3(0, 0, 0);
+        var cameraRot = new THREE.Vector3(0, 0, 0);
         var cameraZoom = 4.31;
 
+
         function updateCamera() {
-          var dir = cameraDir.clone();
+          var dir = new THREE.Vector3(
+            Math.cos(cameraRot.x) * Math.sin(cameraRot.y),
+            Math.sin(cameraRot.x),
+            Math.cos(cameraRot.x) * Math.cos(cameraRot.y)
+          );
+
           dir.multiplyScalar(Math.pow(1.1, cameraZoom));
           dir.sub(cameraPos).negate();
           camera.position.copy(dir);
@@ -41,7 +52,7 @@ angular.module('shapyEditor', [])
         mesh = new THREE.Mesh( geometry );
         scene.add( mesh );
 
-        // Handle mousewheel.
+        // Handle zooming.
         $elem.on('mousewheel', function(event) {
           var delta = event.originalEvent.wheelDelta;
 
@@ -60,6 +71,38 @@ angular.module('shapyEditor', [])
           event.stopPropagation();
           return false;
         });
+  
+        // Detect mouse down.
+        $elem.on('mousedown', function(event) {
+          isMouseDown = true;
+          // Record the position of mouse down.
+          onMouseDownX = event.pageX; 
+          onMouseDownY = event.pageY;
+          onMouseDownRot = cameraRot.clone();
+        });
+
+        // Detect mouse up.
+        $elem.on('mouseup', function(event) {
+          isMouseDown = false;
+        });
+
+        // Detect mouse position.
+        $elem.on('mousemove', function(event) {
+          // Update rotation only if mouse is down.
+          if (!isMouseDown) {
+            return;
+          }
+
+          var dx = event.pageX - onMouseDownX;
+          var dy = event.pageY - onMouseDownY;
+
+          cameraRot.x = onMouseDownRot.x - dy * ROT_SPEED;
+          cameraRot.y = onMouseDownRot.y - dx * ROT_SPEED;
+           // Clamp y to [-pi/2, pi/2].
+          cameraRot.y = Math.min(Math.max(-Math.PI / 2, cameraRot.y), Math.PI / 2);
+          cameraRot.z = onMouseDownRot.z;
+          updateCamera();
+        });
 
         // Render.
         (function loop() {
@@ -76,7 +119,8 @@ angular.module('shapyEditor', [])
       }
     }
   })
-  .controller('EditorController', function($routeParams, $location) {
+  .controller('EditorController', function($routeParams, $location, user) {
+    console.log(user);
     this.sceneID = $routeParams['sceneID'];
     this.items = ['a', 'c', 'd'];
 
@@ -84,8 +128,8 @@ angular.module('shapyEditor', [])
     var sock = new WebSocket("ws://localhost:8001");
     sock.onopen = function() {
       sock.send(JSON.stringify({
-        token: 'token',
-        scene: 'scene'
+        token: user.token,
+        scene: this.sceneID
       }));
 
       sock.onmessage = function(msg) {
@@ -102,8 +146,8 @@ angular.module('shapyEditor', [])
         sock.onmessage = function(msg) {
           console.log('recv');
         }
-      };
-    };
+      }.bind(this);
+    }.bind(this);
 
     sock.onclose = function() {
       console.log('close!');
