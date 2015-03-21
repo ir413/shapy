@@ -36,3 +36,6 @@ config.js
 # ignore backups
 *~
 *.swp
+
+# ignore databases
+*.db
