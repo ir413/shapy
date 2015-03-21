@@ -1,5 +1,5 @@
 var ZOOM_SPEED = 0.2;
-var ROTATION_SCALE = 1;
+var ROT_SPEED = 0.01;
 
 angular.module('shapyEditor', [])
   .directive('shapyCanvas', function() {
@@ -15,19 +15,21 @@ angular.module('shapyEditor', [])
         var isMouseDown = false;
         var onMouseDownX = 0;
         var onMouseDownY = 0;
+        var onMouseDownRot = null;
 
         // Camera parameters.
-        var cameraDir = new THREE.Vector3(0, 0, -1);
         var cameraPos = new THREE.Vector3(0, 0, 0);
         var cameraRot = new THREE.Vector3(0, 0, 0);
         var cameraZoom = 4.31;
 
-        function updateRot(dx, dy) {
-          console.log(dx, dy);
-        }
 
         function updateCamera() {
-          var dir = cameraDir.clone();
+          var dir = new THREE.Vector3(
+            Math.cos(cameraRot.x) * Math.sin(cameraRot.y),
+            Math.sin(cameraRot.x),
+            Math.cos(cameraRot.x) * Math.cos(cameraRot.y)
+          );
+
           dir.multiplyScalar(Math.pow(1.1, cameraZoom));
           dir.sub(cameraPos).negate();
           camera.position.copy(dir);
@@ -76,6 +78,7 @@ angular.module('shapyEditor', [])
           // Record the position of mouse down.
           onMouseDownX = event.pageX; 
           onMouseDownY = event.pageY;
+          onMouseDownRot = cameraRot.clone();
         });
 
         // Detect mouse up.
@@ -85,10 +88,20 @@ angular.module('shapyEditor', [])
 
         // Detect mouse position.
         $elem.on('mousemove', function(event) {
-          // Update rotation if mouse is down.
-          if (isMouseDown) {
-            updateRot(event.pageX - onMouseDownX, event.pageY - onMouseDownY);
+          // Update rotation only if mouse is down.
+          if (!isMouseDown) {
+            return;
           }
+
+          var dx = event.pageX - onMouseDownX;
+          var dy = event.pageY - onMouseDownY;
+
+          cameraRot.x = onMouseDownRot.x - dy * ROT_SPEED;
+          cameraRot.y = onMouseDownRot.y - dx * ROT_SPEED;
+           // Clamp y to [-pi/2, pi/2].
+          cameraRot.y = Math.min(Math.max(-Math.PI / 2, cameraRot.y), Math.PI / 2);
+          cameraRot.z = onMouseDownRot.z;
+          updateCamera();
         });
 
         // Render.
