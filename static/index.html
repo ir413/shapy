@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html>
 
-  <head ng-app="shapy">
+  <head>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
     <script src="/js/main.js"></script>
     <link rel="stylesheet" href="/css/main.css"/>
   </head>
 
-  <body>
+  <body ng-app="shapy" ng-autobind>
+    <shapy-login>
+      TEST
+    </shapy-login>
     <div id="content" ng-view></div>
   </body>
 </html>
