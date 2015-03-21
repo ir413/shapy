@@ -1,7 +1,9 @@
 
 <h1> Scenes currently being created:<h1>
 <div ng-repeat="scene in sceneCtrl.scenes">
-  <a ng-href="/#/editor/:{{scene.id}}" class="btn btn-default btn-lg" role="button">
-    {{scene.id}}</span>
+  <a ng-href="/#/editor/{{scene.id}}" class="btn btn-default btn-lg" role="button">
+    <span>{{scene.id}}</span>
+    by
+    <span>{{scene.owner}}</span>
   </a>
 </div>

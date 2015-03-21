@@ -69,10 +69,15 @@ Scene.all = { 'scene': new Scene('scene') };
           "( id INTEGER PRIMARY KEY" +
           ", username TEXT" +
           ")");
+    
     var stmt = db.prepare("INSERT OR IGNORE INTO scenes VALUES (?, ?, ?)");
-    stmt.run(1, '{}', '0');
-    stmt.run(2, '{}', '0');
-    stmt.run(3, '{}', '0');
+    stmt.run(1, '{}', 878431572216494);
+    stmt.run(2, '{}', 878431572216494);
+    stmt.run(3, '{}', 878431572216494);
+    stmt.finalize();
+
+    var stmt = db.prepare("INSERT OR IGNORE INTO users VALUES (?, ?)");
+    stmt.run(878431572216494, 'RaduSzasz');
     stmt.finalize();
   });
 }
@@ -117,16 +122,21 @@ Scene.all = { 'scene': new Scene('scene') };
   // Returns the list of available scenes.
   app.get('/v1/scenes', function(req, res) {
     var result = [];
-    db.all("SELECT id, owner FROM scenes", function(err, rows) {
-      for (var index in rows) {
-        var row = rows[index];
-        result.push({
-          id: row.id,
-          owner: row.owner
+    db.all(
+        "SELECT scenes.id, users.username " +
+        "FROM scenes " +
+        "JOIN users " +
+        "WHERE users.id = scenes.owner", 
+        function(err, rows) {
+          for (var index in rows) {
+            var row = rows[index];
+            result.push({
+              id: row.id,
+              owner: row.username
+            });
+          }
+          res.send(JSON.stringify(result));
         });
-      }
-      res.send(JSON.stringify(result));
-    });
   });
 
   // Go to authentification link
@@ -148,8 +158,14 @@ Scene.all = { 'scene': new Scene('scene') };
     } else {
       // TODO: choose a better token.
       var token = req.user.id;
-      User.all[token] = new User(req.user.id,
-                          req.user.name.givenName + req.user.name.familyName);
+      var id = req.user.id;
+      var name = req.user.name.givenName + req.user.name.familyName;
+      User.all[token] = new User(id, name);
+
+      var stmt = db.prepare("INSERT OR IGNORE INTO users VALUES (?, ?)");
+      stmt.run(id, name);
+      stmt.finalize();
+
       res.send(JSON.stringify({
         success: true,
         id: req.user.id,

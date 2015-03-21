@@ -39,6 +39,7 @@ angular.module('shapyEditor', ['ngCookies'])
         // Create the renderer.
         var renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColorHex(0xcccccc, 1);
         $elem.append(renderer.domElement);
 
         // Thee.js example test.
@@ -99,7 +100,7 @@ angular.module('shapyEditor', ['ngCookies'])
           cameraRot.x = onMouseDownRot.x - dy * ROT_SPEED;
           cameraRot.y = onMouseDownRot.y - dx * ROT_SPEED;
            // Clamp y to [-pi/2, pi/2].
-          cameraRot.y = Math.min(Math.max(-Math.PI / 2, cameraRot.y), Math.PI / 2);
+          cameraRot.x = Math.min(Math.max(-Math.PI / 2 + 0.001, cameraRot.x), Math.PI / 2 - 0.001);
           cameraRot.z = onMouseDownRot.z;
           updateCamera();
         });

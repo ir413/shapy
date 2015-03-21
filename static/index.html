@@ -10,6 +10,7 @@
     <script src="/js/editor.js"></script>
     <script src="/js/scenes.js"></script>
     <script src="/js/main.js"></script>
+    <link rel="stylesheet" href="/css/main.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
   </head>
 
@@ -19,7 +20,7 @@
         <a href="/auth/facebook">Login with Facebook</a>
       </div>
       <div ng-show="mainCtrl.user">
-        {{mainCtrl.user.id}}
+        {{mainCtrl.user.name}}
       </div>
     </shapy-login>
     <div id="content" ng-view></div>
