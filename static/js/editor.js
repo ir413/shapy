@@ -30,7 +30,7 @@ function Cube(id, data) {
 cubeMap = {};
 
 angular.module('shapyEditor', ['ngCookies'])
-  .directive('shapyCanvas', function() {
+  .directive('shapyCanvas', function($rootScope) {
     return {
       restrict: 'E',
       scope: {
@@ -140,14 +140,13 @@ angular.module('shapyEditor', ['ngCookies'])
           running = false;
         });
 
-        $scope.$watch('items', function() {      
+        $rootScope.$on('change', function() { 
           // Update the cubeMap.
           for (var key in $scope.items) {
             if (!$scope.items.hasOwnProperty(key)) {
               continue;
             }
             var cube = $scope.items[key];
-            //console.log(cube);
             
             // Add the mapping for the cube if it is not present in the 
             // cubeMap, update otherwise.
@@ -169,10 +168,13 @@ angular.module('shapyEditor', ['ngCookies'])
             }
           }
         });
+        $scope.$emit('change');
       }
     }
   })
-  .controller('EditorController', function($routeParams, $location, user) {
+  .controller('EditorController', function($rootScope, $routeParams, $location, user) {
+    var nextID = 2;
+
     this.sceneID = $routeParams['sceneID'];
     this.items = {
       0: new Cube(0,
@@ -182,6 +184,11 @@ angular.module('shapyEditor', ['ngCookies'])
         {px: 0, py: 0, pz: 3}
       )
     };
+
+    this.addCube = function() {
+      this.items[++nextID] = new Cube(nextID, {});
+      $rootScope.$emit('change');
+    }
 
     // Open up the websockets connection.
     var sock = new WebSocket("ws://localhost:8001");
@@ -197,7 +204,7 @@ angular.module('shapyEditor', ['ngCookies'])
         try {
           data = JSON.parse(msg);
         } catch (e) {
-          $location.path('/');
+          //$location.path('/');
           return;
         }
 

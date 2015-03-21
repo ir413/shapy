@@ -12,7 +12,7 @@ canvas {
   z-index: 1;
 }
 
-#sidebar > div {
+#sidebar {
   z-index: 1000;
   position: fixed;
   width: 50px;
@@ -21,4 +21,10 @@ canvas {
   left: 50px;
   background-color: rbga(20, 20, 20, 0.6);
   border-radius: 10px;
+}
+
+#sidebar > div > img {
+  cursor: pointer;
+  width: 45px;
+  height: 45px;
 }
