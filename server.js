@@ -75,7 +75,7 @@ Scene.all = { 'scene': new Scene('scene') };
 // HTTP static files & REST API.
 {
   var app = express();
-  app.use(session({ 
+  app.use(session({
       secret: 'keyboard cat',
       resave: false,
       rolling: true,
@@ -111,11 +111,12 @@ Scene.all = { 'scene': new Scene('scene') };
     } else {
       // TODO: choose a better token.
       var token = req.user.id;
-      User.all[token] = new User(req.user.id, req.user.username);
+      User.all[token] = new User(req.user.id,
+                          req.user.name.givenName + req.user.name.familyName);
       res.send(JSON.stringify({
         success: true,
         id: req.user.id,
-        name: req.user.username,
+        name: req.user.name.givenName + req.user.name.familyName,
         token: token
       }));
     }
