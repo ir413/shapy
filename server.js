@@ -5,6 +5,8 @@ var FacebookStrategy = require('passport-facebook').Strategy;
 var session = require('express-session');
 var config = require('./config');
 var passport = require('passport');
+var sqlite3 = require('sqlite3').verbose();
+var db = new sqlite3.Database('shapy.db');
 
 /**
  * Authenticated user.
@@ -50,6 +52,36 @@ Scene.prototype.getData = function() {
 Scene.all = { 'scene': new Scene('scene') };
 
 
+// Set up the database.
+{
+  db.serialize(function() {
+    db.run(
+        "CREATE TABLE IF NOT EXISTS " +
+        "scenes" +
+          "( id INTEGER PRIMARY KEY" +
+          ", data BLOB" +
+          ", owner INTEGER" +
+          ")");
+
+    db.run(
+        "CREATE TABLE IF NOT EXISTS " +
+        "users" +
+          "( id INTEGER PRIMARY KEY" +
+          ", username TEXT" +
+          ")");
+    
+    var stmt = db.prepare("INSERT OR IGNORE INTO scenes VALUES (?, ?, ?)");
+    stmt.run(1, '{}', 878431572216494);
+    stmt.run(2, '{}', 878431572216494);
+    stmt.run(3, '{}', 878431572216494);
+    stmt.finalize();
+
+    var stmt = db.prepare("INSERT OR IGNORE INTO users VALUES (?, ?)");
+    stmt.run(878431572216494, 'RaduSzasz');
+    stmt.finalize();
+  });
+}
+
 // Configure passport.
 {
   passport.serializeUser(function(user, done) {
@@ -75,7 +107,7 @@ Scene.all = { 'scene': new Scene('scene') };
 // HTTP static files & REST API.
 {
   var app = express();
-  app.use(session({ 
+  app.use(session({
       secret: 'keyboard cat',
       resave: false,
       rolling: true,
@@ -89,7 +121,22 @@ Scene.all = { 'scene': new Scene('scene') };
 
   // Returns the list of available scenes.
   app.get('/v1/scenes', function(req, res) {
-    res.send('[{"id": 1}, {"id": 2}]');
+    var result = [];
+    db.all(
+        "SELECT scenes.id, users.username " +
+        "FROM scenes " +
+        "JOIN users " +
+        "WHERE users.id = scenes.owner", 
+        function(err, rows) {
+          for (var index in rows) {
+            var row = rows[index];
+            result.push({
+              id: row.id,
+              owner: row.username
+            });
+          }
+          res.send(JSON.stringify(result));
+        });
   });
 
   // Go to authentification link
@@ -111,11 +158,18 @@ Scene.all = { 'scene': new Scene('scene') };
     } else {
       // TODO: choose a better token.
       var token = req.user.id;
-      User.all[token] = new User(req.user.id, req.user.username);
+      var id = req.user.id;
+      var name = req.user.name.givenName + req.user.name.familyName;
+      User.all[token] = new User(id, name);
+
+      var stmt = db.prepare("INSERT OR IGNORE INTO users VALUES (?, ?)");
+      stmt.run(id, name);
+      stmt.finalize();
+
       res.send(JSON.stringify({
         success: true,
         id: req.user.id,
-        name: req.user.username,
+        name: req.user.name.givenName + req.user.name.familyName,
         token: token
       }));
     }
