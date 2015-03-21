@@ -59,6 +59,7 @@ Scene.all = { 'scene': new Scene('scene') };
         "CREATE TABLE IF NOT EXISTS " +
         "scenes" +
           "( id INTEGER PRIMARY KEY" +
+          ", scenename TEXT" +
           ", data BLOB" +
           ", owner INTEGER" +
           ")");
@@ -70,10 +71,10 @@ Scene.all = { 'scene': new Scene('scene') };
           ", username TEXT" +
           ")");
     
-    var stmt = db.prepare("INSERT OR IGNORE INTO scenes VALUES (?, ?, ?)");
-    stmt.run(1, '{}', 878431572216494);
-    stmt.run(2, '{}', 878431572216494);
-    stmt.run(3, '{}', 878431572216494);
+    var stmt = db.prepare("INSERT OR IGNORE INTO scenes VALUES (?, ?, ?, ?)");
+    stmt.run(1, 'Example scene', '{}', 878431572216494);
+    stmt.run(2, 'City of cubes', '{}', 878431572216494);
+    stmt.run(3, 'Model of Ilija\'s thought process', '{}', 878431572216494);
     stmt.finalize();
 
     var stmt = db.prepare("INSERT OR IGNORE INTO users VALUES (?, ?)");
@@ -123,7 +124,7 @@ Scene.all = { 'scene': new Scene('scene') };
   app.get('/v1/scenes', function(req, res) {
     var result = [];
     db.all(
-        "SELECT scenes.id, users.username " +
+        "SELECT scenes.id, scenes.scenename, users.username " +
         "FROM scenes " +
         "JOIN users " +
         "WHERE users.id = scenes.owner", 
@@ -132,6 +133,7 @@ Scene.all = { 'scene': new Scene('scene') };
             var row = rows[index];
             result.push({
               id: row.id,
+              scenename: row.scenename,
               owner: row.username
             });
           }
