@@ -60,9 +60,15 @@ Scene.all = { 'scene': new Scene('scene') };
         "scenes" +
           "( id INTEGER PRIMARY KEY" +
           ", data BLOB" +
-          ", owner TEXT" +
+          ", owner INTEGER" +
           ")");
 
+    db.run(
+        "CREATE TABLE IF NOT EXISTS " +
+        "users" +
+          "( id INTEGER PRIMARY KEY" +
+          ", username TEXT" +
+          ")");
     var stmt = db.prepare("INSERT OR IGNORE INTO scenes VALUES (?, ?, ?)");
     stmt.run(1, '{}', '0');
     stmt.run(2, '{}', '0');
