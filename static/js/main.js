@@ -2,9 +2,10 @@
 /**
  * Stores information about the current user.
  */
-function User(id, name) {
+function User(id, name, token) {
   this.id = id;
   this.name = name;
+  this.token = token;
 };
 
 
@@ -60,15 +61,11 @@ angular.module('shapy', ['ngRoute', 'shapyEditor', 'shapyScenes'])
         defer.resolve(this.user);
         return defer.promise;
       }
+
       return $http.get('/auth/info')
         .then(function(data) {
           var resp = data.data;
-
-          if (!resp.success) {
-            return null;
-          }
-          
-          this.user = new User(resp.id, resp.name);
+          this.user = new User(resp.id, resp.name, resp.token);
           return this.user;
         }.bind(this));
     };
