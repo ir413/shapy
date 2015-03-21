@@ -16,16 +16,20 @@ shapy.directive('shapyLogin', function() {
 
 shapy.config(['$routeProvider',
   function($routeProvider) {
-    $routeProvider.
-      when('/', {
+    $routeProvider
+      .when('/', {
         templateUrl: 'main.html',
-        controller: 'EditorController'
-      }).
-      when('/editor', {
+        controller: 'MainController',
+      })
+      .when('/editor', {
         templateUrl: 'editor.html',
         controller: 'EditorController'
-      }).
-      otherwise({
+      })
+      .otherwise({
         redirectTo: '/'
       });
   }]);
+
+shapy.controller('MainController', function() {
+    console.log('main!');
+  });
