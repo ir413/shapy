@@ -1,6 +1,34 @@
 var ZOOM_SPEED = 0.2;
 var ROT_SPEED = 0.01;
 
+/**
+ * Cube representation.
+ */
+function Cube(id, data) {
+  this. id = id;
+  this.pos = new THREE.Vector3(
+    data.px || 0, 
+    data.py || 0, 
+    data.pz || 0);
+  this.size = new THREE.Vector3(
+    data.width || 1, 
+    data.height || 1, 
+    data.depth || 1);
+  this.scale = new THREE.Vector3(
+    data.sx || 1, 
+    data.sy || 1, 
+    data.sz || 1);
+  this.rot = new THREE.Vector3(
+    data.rx || 1,
+    data.ry || 1,
+    data.rz || 1);
+}
+
+/**
+ * Mapping between our cubes and meshes.
+ */
+cubeMap = {};
+
 angular.module('shapyEditor', ['ngCookies'])
   .directive('shapyCanvas', function() {
     return {
@@ -21,7 +49,6 @@ angular.module('shapyEditor', ['ngCookies'])
         var cameraPos = new THREE.Vector3(0, 0, 0);
         var cameraRot = new THREE.Vector3(0, 0, 0);
         var cameraZoom = 4.31;
-
 
         function updateCamera() {
           var dir = new THREE.Vector3(
@@ -47,11 +74,6 @@ angular.module('shapyEditor', ['ngCookies'])
         updateCamera();
 
         scene = new THREE.Scene();
-
-        var geometry = new THREE.BoxGeometry(1, 1, 1 );
-
-        mesh = new THREE.Mesh( geometry );
-        scene.add( mesh );
 
         // Handle zooming.
         $elem.on('mousewheel', function(event) {
@@ -117,13 +139,49 @@ angular.module('shapyEditor', ['ngCookies'])
         $scope.$on('$destroy', function() {
           running = false;
         });
+
+        $scope.$watch('items', function() {      
+          // Update the cubeMap.
+          for (var key in $scope.items) {
+            if (!$scope.items.hasOwnProperty(key)) {
+              continue;
+            }
+            var cube = $scope.items[key];
+            //console.log(cube);
+            
+            // Add the mapping for the cube if it is not present in the 
+            // cubeMap, update otherwise.
+            if (!(cube.id in cubeMap)) {
+              cubeMap[cube.id] 
+                = new THREE.Mesh(
+                  new THREE.BoxGeometry(cube.size.x, cube.size.y, cube.size.z), 
+                  new THREE.MeshBasicMaterial( {color: 0x00ff00} ) 
+                );
+              cubeMap[cube.id].position.copy(cube.pos.clone());
+              scene.add(cubeMap[cube.id]);
+            }
+          }
+
+          // Remove the deleted cubes from the cubeMap
+          for (var cubeId in cubeMap) {
+            if (!(cubeId in $scope.items)) {
+              delete cubeMap[cubeId];
+            }
+          }
+        });
       }
     }
   })
   .controller('EditorController', function($routeParams, $location, user) {
-    console.log(user);
     this.sceneID = $routeParams['sceneID'];
-    this.items = ['a', 'c', 'd'];
+    this.items = {
+      0: new Cube(0,
+        {px: 0, py: 1, pz: 0}
+      ),
+      1: new Cube(1,
+        {px: 0, py: 0, pz: 3}
+      )
+    };
 
     // Open up the websockets connection.
     var sock = new WebSocket("ws://localhost:8001");
