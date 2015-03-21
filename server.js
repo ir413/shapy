@@ -74,34 +74,39 @@ Scene.all = { 'scene': new Scene('scene') };
 // HTTP static files & REST API.
 {
   var app = express();
+  app.use(passport.initialize());
+  app.use(passport.session());
+  app.use(express.static(path.join(__dirname, 'static')));
+  app.listen(8000);
+
+  // Returns the list of available scenes.
   app.get('/v1/scenes', function(req, res) {
     res.send('[{"id": 1}, {"id": 2}]');
   });
-  app.use(express.static(path.join(__dirname, 'static')));
-  app.use(passport.initialize());
-  app.use(passport.session());
-  app.listen(8000);
+
   // Go to authentification link
   app.get('/auth/facebook', passport.authenticate('facebook'));
 
   // Callback function after Facebook login
-  app.get('/auth/facebook/callback',
-      passport.authenticate('facebook', {
-        successRedirect : '/',
-        failureRedirect : '/login'
-      }),
-      function(req, res) {
-        res.redirect('/');
-      });
+  app.get('/auth/facebook/callback', passport.authenticate('facebook', {
+      successRedirect : '/',
+      failureRedirect : '/login'
+    }));
 
-  // Ensure the user is authenticated. If not, redirect to login
-  function ensureAuthenticated(req, res, next) {
-    if(req.isAuthenticated()) {
-      return next();
+  // Link to retrieve user info.
+  app.get('/auth/info', function(req, res) {
+    if (!req.isAuthenticated()) {
+      res.send(JSON.stringify({
+        success: false
+      }));
+    } else {
+      res.send(JSON.stringify({
+        success: true,
+        id: req.user.id,
+        name: req.user.username
+      }));
     }
-
-    req.redirect('/login');
-  }
+  });
 }
 
 
@@ -111,7 +116,7 @@ Scene.all = { 'scene': new Scene('scene') };
 
   srv.on('connection', function(ws) {
     var user, scene;
-    
+
     /** 
      * Handles the first auth message.
      */
