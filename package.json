@@ -10,6 +10,9 @@
         "ws": "*",
         "connect": "*",
         "serve-static": "*",
-        "express": "*"
+        "express": "*",
+        "passport-facebook": "*",
+        "passport": "*",
+        "express-session": "*"
     }
 }
