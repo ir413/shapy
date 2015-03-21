@@ -1,6 +1,10 @@
 var express = require('express');
 var path = require('path');
 var ws = require('ws');
+var FacebookStrategy = require('passport-facebook').Strategy;
+var session = require('express-session');
+var config = require('./config');
+var passport = require('passport');
 
 /**
  * Authenticated user.
@@ -45,11 +49,53 @@ Scene.prototype.getData = function() {
 Scene.all = { 'scene': new Scene('scene') };
 
 
+// Configure passport.
+{
+  passport.serializeUser(function(user, done) {
+    done(null, user);
+  });
+
+  passport.deserializeUser(function(obj, done) {
+    done(null,obj);
+  });
+
+  // Use Facebook strategy within Passport
+  passport.use(new FacebookStrategy({
+      clientID      : config.facebook_api_key,
+      clientSecret  : config.facebook_api_secret,
+      callbackURL   : config.callback_url
+    },
+    function(accessToken, refreshToken, profile, done) {
+      done(null, profile);
+    }));
+}
+
+
 // HTTP static files & REST API.
 {
   var app = express();
   app.use(express.static(path.join(__dirname, 'static')));
   app.listen(8000);
+  // Go to authentification link
+  app.get('/auth/facebook', passport.authenticate('facebook'));
+
+  // Callback function after Facebook login
+  app.get('/auth/facebook/callback', passport.authenticate('facebook', {
+      successRedirect : '/',
+      failureRedirect : '/login'
+    }),
+    function(req, res) {
+      res.redirect('/');
+    });
+
+  // Ensure the user is authenticated. If not, redirect to login
+  function ensureAuthenticated(req, res, next) {
+    if(req.isAuthenticated()) {
+      return next();
+    }
+
+    req.redirect('/login');
+  }
 }
 
 
