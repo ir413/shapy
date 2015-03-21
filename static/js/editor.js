@@ -1,7 +1,7 @@
 var ZOOM_SPEED = 0.2;
 var ROT_SPEED = 0.01;
 
-angular.module('shapyEditor', [])
+angular.module('shapyEditor', ['ngCookies'])
   .directive('shapyCanvas', function() {
     return {
       restrict: 'E',
@@ -119,7 +119,8 @@ angular.module('shapyEditor', [])
       }
     }
   })
-  .controller('EditorController', function($routeParams, $location) {
+  .controller('EditorController', function($routeParams, $location, user) {
+    console.log(user);
     this.sceneID = $routeParams['sceneID'];
     this.items = ['a', 'c', 'd'];
 
@@ -127,8 +128,8 @@ angular.module('shapyEditor', [])
     var sock = new WebSocket("ws://localhost:8001");
     sock.onopen = function() {
       sock.send(JSON.stringify({
-        token: 'token',
-        scene: 'scene'
+        token: user.token,
+        scene: this.sceneID
       }));
 
       sock.onmessage = function(msg) {
@@ -145,8 +146,8 @@ angular.module('shapyEditor', [])
         sock.onmessage = function(msg) {
           console.log('recv');
         }
-      };
-    };
+      }.bind(this);
+    }.bind(this);
 
     sock.onclose = function() {
       console.log('close!');

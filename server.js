@@ -9,9 +9,10 @@ var passport = require('passport');
 /**
  * Authenticated user.
  */
-function User(name) {
+function User(id, name, token) {
+  this.id = id;
   this.name = name;
-  this.token = 'token';
+  this.token = token;
   this.conn = null;
   this.scene = null;
 }
@@ -76,8 +77,10 @@ Scene.all = { 'scene': new Scene('scene') };
   var app = express();
   app.use(session({ 
       secret: 'keyboard cat',
-      resave: true,
-      saveUnitialized: false
+      resave: false,
+      rolling: true,
+      saveUninitialized: false,
+      maxAge: 3600000
   }));
   app.use(passport.initialize());
   app.use(passport.session());
@@ -101,14 +104,19 @@ Scene.all = { 'scene': new Scene('scene') };
   // Link to retrieve user info.
   app.get('/auth/info', function(req, res) {
     if (!req.isAuthenticated()) {
+      res.statusCode = 500;
       res.send(JSON.stringify({
         success: false
       }));
     } else {
+      // TODO: choose a better token.
+      var token = req.user.id;
+      User.all[token] = new User(req.user.id, req.user.username);
       res.send(JSON.stringify({
         success: true,
         id: req.user.id,
-        name: req.user.username
+        name: req.user.username,
+        token: token
       }));
     }
   });
@@ -154,7 +162,7 @@ Scene.all = { 'scene': new Scene('scene') };
       // Validate the scene or create a new one.
       if (!(sceneId in Scene.all)) {
         // Create a new scene & assign it to the user.
-        Scene.all = new Scene[sceneId];
+        Scene.all[sceneId] = new Scene(sceneId);
       }
 
       // Add user to the scene.
@@ -177,6 +185,7 @@ Scene.all = { 'scene': new Scene('scene') };
         type: 'scene',
         scene: scene.getData()
       }));
+      console.log(scene.getData());
     }
     ws.on('message', onAuthMessage);
 
@@ -185,7 +194,6 @@ Scene.all = { 'scene': new Scene('scene') };
      */
     var onMessage = function(msg) {
       var data;
-
 
       if (!user || !scene) {
         console.log('%s: invalid user/scene', user ? user.token : null);
@@ -207,6 +215,12 @@ Scene.all = { 'scene': new Scene('scene') };
         case '3d-scale': {
           break;
         }
+        case 'obj-create': {
+          break;
+        }
+        case 'obj-delete': {
+          break;
+        }
         default: {
           console.log('%s: invalid "%s"', user.token, data.type);
           break;
@@ -220,7 +234,7 @@ Scene.all = { 'scene': new Scene('scene') };
       }
 
       // Remove the user from the scene.
-      
+      user.scene.users.splice(user.scene.users.indexOf(user), 1);
 
       // Kill the connection.
       if (user.conn) {
