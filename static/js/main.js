@@ -1,20 +1,15 @@
 
 
-
-var shapy = angular.module('shapy', ['ngRoute', 'shapyEditor', 'shapyScenes'])
-
-
-shapy.directive('shapyLogin', function() {
+angular.module('shapy', ['ngRoute', 'shapyEditor', 'shapyScenes'])
+  .directive('shapyLogin', function() {
     return {
       restrict: 'E',
       link: function($scope, $elem, $attrs) {
         console.log('link');
       }
     };
-  });
-
-
-shapy.config(['$routeProvider',
+  })
+  .config(['$routeProvider',
   function($routeProvider) {
     $routeProvider
       .when('/', {
@@ -25,15 +20,15 @@ shapy.config(['$routeProvider',
         templateUrl: 'scenes.html',
         controller: 'ScenesController'
       })
-      .when('/editor', {
+      .when('/editor/:sceneID', {
         templateUrl: 'editor.html',
-        controller: 'EditorController'
+        controller: 'EditorController',
+        controllerAs: 'editorCtrl'
       })
       .otherwise({
         redirectTo: '/'
       });
-  }]);
-
-shapy.controller('MainController', function() {
+  }])
+  .controller('MainController', function() {
     console.log('main!');
   });

@@ -203,7 +203,7 @@ Scene.all = { 'scene': new Scene('scene') };
           break;
         }
         default: {
-          console.log('%s: invalid "%s"', data.type);
+          console.log('%s: invalid "%s"', user.token, data.type);
           break;
         }
       }
