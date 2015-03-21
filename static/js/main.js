@@ -20,9 +20,10 @@ angular.module('shapy', ['ngRoute', 'shapyEditor', 'shapyScenes'])
         templateUrl: 'scenes.html',
         controller: 'ScenesController'
       })
-      .when('/editor', {
+      .when('/editor/:sceneID', {
         templateUrl: 'editor.html',
-        controller: 'EditorController'
+        controller: 'EditorController',
+        controllerAs: 'editorCtrl'
       })
       .otherwise({
         redirectTo: '/'
