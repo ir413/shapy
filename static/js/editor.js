@@ -1,6 +1,5 @@
-
 var ZOOM_SPEED = 0.2;
-
+var ROTATION_SCALE = 1;
 
 angular.module('shapyEditor', [])
   .directive('shapyCanvas', function() {
@@ -11,11 +10,21 @@ angular.module('shapyEditor', [])
       },
       link: function($scope, $elem) {
         var running = true;
-        
+
+        // Rotation vars.
+        var isMouseDown = false;
+        var onMouseDownX = 0;
+        var onMouseDownY = 0;
+
         // Camera parameters.
         var cameraDir = new THREE.Vector3(0, 0, -1);
         var cameraPos = new THREE.Vector3(0, 0, 0);
+        var cameraRot = new THREE.Vector3(0, 0, 0);
         var cameraZoom = 4.31;
+
+        function updateRot(dx, dy) {
+          console.log(dx, dy);
+        }
 
         function updateCamera() {
           var dir = cameraDir.clone();
@@ -41,7 +50,7 @@ angular.module('shapyEditor', [])
         mesh = new THREE.Mesh( geometry );
         scene.add( mesh );
 
-        // Handle mousewheel.
+        // Handle zooming.
         $elem.on('mousewheel', function(event) {
           var delta = event.originalEvent.wheelDelta;
 
@@ -59,6 +68,27 @@ angular.module('shapyEditor', [])
           event.preventDefault();
           event.stopPropagation();
           return false;
+        });
+  
+        // Detect mouse down.
+        $elem.on('mousedown', function(event) {
+          isMouseDown = true;
+          // Record the position of mouse down.
+          onMouseDownX = event.pageX; 
+          onMouseDownY = event.pageY;
+        });
+
+        // Detect mouse up.
+        $elem.on('mouseup', function(event) {
+          isMouseDown = false;
+        });
+
+        // Detect mouse position.
+        $elem.on('mousemove', function(event) {
+          // Update rotation if mouse is down.
+          if (isMouseDown) {
+            updateRot(event.pageX - onMouseDownX, event.pageY - onMouseDownY);
+          }
         });
 
         // Render.
