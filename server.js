@@ -5,6 +5,8 @@ var FacebookStrategy = require('passport-facebook').Strategy;
 var session = require('express-session');
 var config = require('./config');
 var passport = require('passport');
+var sqlite3 = require('sqlite3').verbose();
+var db = new sqlite3.Database('shapy.db');
 
 /**
  * Authenticated user.
@@ -49,6 +51,25 @@ Scene.prototype.getData = function() {
 Scene.all = { 'scene': new Scene('scene') };
 
 
+// Set up the database.
+{
+  db.serialize(function() {
+    db.run(
+        "CREATE TABLE IF NOT EXISTS " +
+        "scenes" +
+          "( id INTEGER PRIMARY KEY" +
+          ", data BLOB" +
+          ", owner TEXT" +
+          ")");
+
+    var stmt = db.prepare("INSERT OR IGNORE INTO scenes VALUES (?, ?, ?)");
+    stmt.run(1, '{}', '0');
+    stmt.run(2, '{}', '0');
+    stmt.run(3, '{}', '0');
+    stmt.finalize();
+  });
+}
+
 // Configure passport.
 {
   passport.serializeUser(function(user, done) {
@@ -86,7 +107,17 @@ Scene.all = { 'scene': new Scene('scene') };
 
   // Returns the list of available scenes.
   app.get('/v1/scenes', function(req, res) {
-    res.send('[{"id": 1}, {"id": 2}]');
+    var result = [];
+    db.all("SELECT id, owner FROM scenes", function(err, rows) {
+      for (var index in rows) {
+        var row = rows[index];
+        result.push({
+          id: row.id,
+          owner: row.owner
+        });
+      }
+      res.send(JSON.stringify(result));
+    });
   });
 
   // Go to authentification link

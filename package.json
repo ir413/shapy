@@ -13,6 +13,7 @@
         "express": "*",
         "passport-facebook": "*",
         "passport": "*",
-        "express-session": "*"
+        "express-session": "*",
+        "sqlite3": "*"
     }
 }
