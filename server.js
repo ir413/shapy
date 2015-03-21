@@ -74,6 +74,11 @@ Scene.all = { 'scene': new Scene('scene') };
 // HTTP static files & REST API.
 {
   var app = express();
+  app.use(session({ 
+      secret: 'keyboard cat',
+      resave: true,
+      saveUnitialized: false
+  }));
   app.use(passport.initialize());
   app.use(passport.session());
   app.use(express.static(path.join(__dirname, 'static')));

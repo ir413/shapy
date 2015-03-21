@@ -14,7 +14,12 @@
 
   <body ng-autobind>
     <shapy-login>
-      <a href="/auth/facebook">Login with Facebook</a>
+      <div ng-hide="mainCtrl.user">
+        <a href="/auth/facebook">Login with Facebook</a>
+      </div>
+      <div ng-show="mainCtrl.user">
+        {{mainCtrl.user.id}}
+      </div>
     </shapy-login>
     <div id="content" ng-view></div>
   </body>
