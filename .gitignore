@@ -29,3 +29,6 @@ node_modules
 
 # Sublime stuff
 *sublime*
+
+# Config.
+config.js
