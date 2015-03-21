@@ -20,6 +20,7 @@ angular.module('shapy', ['ngRoute', 'shapyEditor', 'shapyScenes'])
       .when('/scenes', {
         templateUrl: 'scenes.html',
         controller: 'ScenesController',
+        controllerAs: 'sceneCtrl',
         resolve: {
           'user': function(shapyUsers) {
             return shapyUsers.getUser();
