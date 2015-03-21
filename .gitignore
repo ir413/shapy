@@ -29,3 +29,10 @@ node_modules
 
 # Sublime stuff
 *sublime*
+
+# configuration file
+config.js
+
+# ignore backups
+*~
+*.swp
