@@ -1,7 +1,7 @@
 
 
 
-var shapy = angular.module('shapy', ['ngRoute', 'shapyEditor'])
+var shapy = angular.module('shapy', ['ngRoute', 'shapyEditor', 'shapyScenes'])
 
 
 shapy.directive('shapyLogin', function() {
@@ -16,16 +16,24 @@ shapy.directive('shapyLogin', function() {
 
 shapy.config(['$routeProvider',
   function($routeProvider) {
-    $routeProvider.
-      when('/', {
+    $routeProvider
+      .when('/', {
         templateUrl: 'main.html',
-        controller: 'EditorController'
-      }).
-      when('/editor', {
+        controller: 'MainController',
+      })
+      .when('/scenes', {
+        templateUrl: 'scenes.html',
+        controller: 'ScenesController'
+      })
+      .when('/editor', {
         templateUrl: 'editor.html',
         controller: 'EditorController'
-      }).
-      otherwise({
+      })
+      .otherwise({
         redirectTo: '/'
       });
   }]);
+
+shapy.controller('MainController', function() {
+    console.log('main!');
+  });
