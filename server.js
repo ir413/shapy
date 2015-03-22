@@ -349,9 +349,9 @@ Scene.all = { 'scene': new Scene('scene') };
         }
         case '3d-scale': {
           var item = scene.objs[data.id];
-          item.sx = data.sx;
-          item.sy = data.sy;
-          item.sz = data.sz;
+          item.width += data.sx;
+          item.height += data.sy;
+          item.depth += data.sz;
           scene.save();
           broadcast(data);
           break;

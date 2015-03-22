@@ -307,7 +307,7 @@ Scaler.prototype.add = function(scene) {
 Scaler.prototype.action = function(raycaster) {
   var i;
 
-  this.refPoint = this.object.data.pos.clone();
+  this.refPoint = this.object.data.size.clone();
   if ((i = raycaster.intersectObject(this.cubeX)).length > 0) {
     this.startPoint = i[0].point.clone();
     this.ref = this.cubeX;
@@ -334,21 +334,37 @@ Scaler.prototype.move = function(raycaster, mid) {
 var ref;
 
   switch (this.axis) {
-    case 'x': ref = this.cubeX; break;
-    case 'y': ref = this.cubeY; break;
-    case 'z': ref = this.cubeZ; break;
+    case 'x': v = new THREE.Vector3(1, 0, 0); ref = this.cubeX; break;
+    case 'y': v = new THREE.Vector3(0, 1, 0); ref = this.cubeY; break;
+    case 'z': v = new THREE.Vector3(0, 0, 1); ref = this.cubeZ; break;
   }
 
+  var p = raycaster.ray.origin;
+  var q = ref.position;
+  var u = raycaster.ray.direction;
+
+  var a = u.dot(u);
+  var b = u.dot(v);
+  var e = v.dot(v);
+
+  var d = a * e - b * b;
+
+  var r = p.clone().sub(q);
+  var c = u.dot(r);
+  var f = v.dot(r);
+
+  var s = (b*f - c*e) / d;
+  var t = (a*f - b*c) / d;
+
+  var p1 = p.clone().add(u.clone().multiplyScalar(s));
+  var p2 = q.clone().add(v.clone().multiplyScalar(t));
   var i = raycaster.intersectObject(ref);
-  if (i.length <= 0) {
-    return false;
-  }
 
   var off;
   switch (this.axis) {
     case 'x': {
       off = new THREE.Vector3(
-        i[0].point.x - this.startPoint.x,
+        p2.x - this.startPoint.x,
         0,
         0);
       break;
@@ -356,7 +372,7 @@ var ref;
     case 'y': {
       off = new THREE.Vector3(
         0,
-        i[0].point.y - this.startPoint.y,
+        p2.y - this.startPoint.y,
         0);
       break;
     }
@@ -364,30 +380,22 @@ var ref;
       off = new THREE.Vector3(
         0,
         0,
-        i[0].point.z - this.startPoint.z);
+        p2.z - this.startPoint.z);
       break;
     }
   }
-  
-  //console.log(this.object.data);
 
-  console.log(this.object.data.size.x);
-
-  off.add(this.refPoint);
-  var diff = off.clone().sub(this.object.data.pos);
+  off.multiplyScalar(2).add(this.refPoint);
+  var diff = off.clone().sub(this.object.data.size);
   sock.send(JSON.stringify({
     'type': '3d-scale',
     'id': this.object.data.id,
-    'sx': this.object.data.size.x + diff.x,
-    'sy': this.object.data.size.y + diff.y,
-    'sz': this.object.data.size.z + diff.z
+    'sx': diff.x,
+    'sy': diff.y,
+    'sz': diff.z
   }));
 
-  this.object.data.size.x += diff.x;
-  this.object.data.size.y += diff.y;
-  this.object.data.size.z += diff.z;
-
-  console.log(cubeMap[this.object.data.id]);
+  this.object.data.size.copy(off);
 
   this.remove(this.scene);
   this.add(this.scene);
@@ -554,7 +562,6 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
           isMouseDown = false;
           isMouseDragging = false;
           if (editor) {
-            editor.move(raycaster, false);
             editor.remove(scene);
             editor = null;
           }
@@ -784,6 +791,13 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
             item.pos.x += data.tx;
             item.pos.y += data.ty;
             item.pos.z += data.tz;
+            break;
+          }
+          case '3d-scale': {
+            var item = this.items[data.id];
+            item.size.x += data.sx;
+            item.size.y += data.sy;
+            item.size.z += data.sz;
             break;
           }
         }
