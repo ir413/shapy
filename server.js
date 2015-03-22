@@ -59,7 +59,21 @@ User.all = { 'token': new User('Jeff') };
 function Scene(id) {
   this.id = id;
   this.users = [];
-  this.objs = {};
+  this.objs = {
+    1: {
+      id: 1,
+      width: 30,
+      height: 0.2,
+      depth: 30,
+      sx: 1,
+      sy: 1,
+      sz: 1,
+      rx: 0,
+      ry: 0,
+      rz: 0,
+      colour: 0x555555
+    }
+  };
 }
 
 /**
@@ -80,7 +94,7 @@ Scene.prototype.getData = function() {
  * Saves the scene.
  */
 Scene.prototype.save = function() {
-
+  
 };
 
 
@@ -341,13 +355,18 @@ Scene.all = { 'scene': new Scene('scene') };
         case 'obj-create': {
           scene.objs[data.data.id] = {
             id: data.data.id,
+            
+            width: data.data.width || 1,
+            height: data.data.height || 1,
+            depth: data.data.depth || 1,
+
             px: data.data.px || 0,
             py: data.data.py || 0,
             pz: data.data.pz || 0,
             
-            sx: data.data.sx || 0,
-            sy: data.data.sy || 0,
-            sz: data.data.sz || 0,
+            sx: data.data.sx || 1,
+            sy: data.data.sy || 1,
+            sz: data.data.sz || 1,
 
             rx: data.data.rx || 0,
             ry: data.data.ry || 0,

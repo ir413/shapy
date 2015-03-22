@@ -22,9 +22,9 @@ function Cube(data) {
     data.sy || 1, 
     data.sz || 1);
   this.rot = new THREE.Vector3(
-    data.rx || 1,
-    data.ry || 1,
-    data.rz || 1);
+    data.rx || 0,
+    data.ry || 0,
+    data.rz || 0);
   this.colour = data.colour || 0x333333;
 }
 
@@ -62,7 +62,7 @@ Translator.prototype.add = function(scene) {
   this.scene = scene;
   // X cylinder.
   this.cylinderX = new THREE.Mesh(
-      new THREE.CylinderGeometry(0, 0.4, 0.8, 50, 50, false), 
+      new THREE.CylinderGeometry(0, 0.4, 1.3, 50, 50, false), 
       new THREE.MeshBasicMaterial({ color: 0xFF0000}));
   this.cylinderX.position.set(
       this.object.data.pos.x + this.object.data.size.x / 2 + 0.23,
@@ -78,7 +78,7 @@ Translator.prototype.add = function(scene) {
 
   // Y cylinder
   this.cylinderY = new THREE.Mesh(
-      new THREE.CylinderGeometry(0, 0.4, 0.8, 50, 50, false), 
+      new THREE.CylinderGeometry(0, 0.4, 1.3, 50, 50, false), 
       new THREE.MeshBasicMaterial({ color: 0x00FF00}));
   this.cylinderY.position.set(
       this.object.data.pos.x,
@@ -94,7 +94,7 @@ Translator.prototype.add = function(scene) {
 
   // Z cylinder.  
   this.cylinderZ = new THREE.Mesh(
-      new THREE.CylinderGeometry(0, 0.4, 0.8, 50, 50, false), 
+      new THREE.CylinderGeometry(0, 0.4, 1.3, 50, 50, false), 
       new THREE.MeshBasicMaterial({ color: 0x0000FF}));
   this.cylinderZ.position.set(
       this.object.data.pos.x,
@@ -243,7 +243,7 @@ Scaler.prototype.remove = function(scene) {
 cubeMap = {};
 
 angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
-  .directive('shapyCanvas', function($rootScope) {
+  .directive('shapyCanvas', function($rootScope, $modal) {
     return {
       restrict: 'E',
       scope: {
@@ -367,7 +367,8 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
           }           
 
           selected = intersects[0];
-          selected.object.material.color.set(0xff0000);
+          var colour = selected.object.material.color;
+          selected.object.material.color.copy(colour.multiplyScalar(1.3));
         });
 
         // Detect mouse up.
@@ -438,6 +439,41 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
               editor.add(scene);
               break;
             }
+            case 99: {
+              if (!selected) {
+                break;
+              }
+              var sel = selected;
+              var modal = $modal.open({
+                templateUrl: 'colour.html',
+                controller: function(selected) {
+                  this.r = (selected.object.data.colour >> 16) & 0xFF;
+                  this.g = (selected.object.data.colour >>  8) & 0xFF;
+                  this.b = (selected.object.data.colour >>  0) & 0xFF;
+
+                  $scope.$watch(function() {
+                    var r = parseInt(this.r);
+                    var g = parseInt(this.g);
+                    var b = parseInt(this.b);
+
+                    var mask = ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
+                    selected.object.data.colour = mask;
+                    $rootScope.$emit('change');
+                  }.bind(this));
+                  this.close = function() {
+                    modal.close();
+                  };
+                },
+                controllerAs: 'colourCtrl',
+                size: 'sm',
+                resolve: {
+                  selected: function () {
+                    return sel;
+                  }
+                }
+              });
+              break;
+            }
           }
         });
 
@@ -455,6 +491,7 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
         });
 
         function update() { 
+          console.log('update');
           // Update the cubeMap.
           for (var key in $scope.items) {
             if (!$scope.items.hasOwnProperty(key)) {
@@ -482,6 +519,10 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
               scene.remove(cubeMap[cubeId]);
               delete cubeMap[cubeId];
             }
+          }
+
+          if (selected) {
+            selected.object.material.color.set(selected.object.data.colour);
           }
         };
 
@@ -511,7 +552,6 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
         var data = renderer.domElement.toDataURL("image/png");
         $http.post('/v1/screenshot', { data: data, name: name })
           .success(function() {
-            console.log('success');
             $modal.open({
               templateUrl: 'screenshot.html',
               controller: 'ScreenshotCtrl',
