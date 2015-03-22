@@ -139,21 +139,43 @@ Translator.prototype.move = function(raycaster, mid) {
   var ref;
 
   switch (this.axis) {
-    case 'x': ref = this.cylinderX; break;
-    case 'y': ref = this.cylinderY; break;
-    case 'z': ref = this.cylinderZ; break;
+    case 'x': v = new THREE.Vector3(1, 0, 0); ref = this.cylinderX; break;
+    case 'y': v = new THREE.Vector3(0, 1, 0); ref = this.cylinderY; break;
+    case 'z': v = new THREE.Vector3(0, 0, 1); ref = this.cylinderZ; break;
   }
+
+  var p = raycaster.ray.origin;
+  var q = ref.position;
+  var u = raycaster.ray.direction;
+
+  var a = u.dot(u);
+  var b = u.dot(v);
+  var e = v.dot(v);
+
+  var d = a * e - b * b;
+
+  var r = p.clone().sub(q);
+  var c = u.dot(r);
+  var f = v.dot(r);
+
+  var s = (b*f - c*e) / d;
+  var t = (a*f - b*c) / d;
+
+  var p1 = p.clone().add(u.clone().multiplyScalar(s));
+  var p2 = q.clone().add(v.clone().multiplyScalar(t));
+  /*
+  console.log(p1, p2);
 
   var i = raycaster.intersectObject(ref);
   if (i.length <= 0) {
     return false;
-  }
+  }*/
 
   var off;
   switch (this.axis) {
     case 'x': {
       off = new THREE.Vector3(
-        i[0].point.x - this.startPoint.x,
+        p2.x - this.startPoint.x,
         0,
         0);
       break;
@@ -161,7 +183,7 @@ Translator.prototype.move = function(raycaster, mid) {
     case 'y': {
       off = new THREE.Vector3(
         0,
-        i[0].point.y - this.startPoint.y,
+        p2.y - this.startPoint.y,
         0);
       break;
     }
@@ -169,10 +191,12 @@ Translator.prototype.move = function(raycaster, mid) {
       off = new THREE.Vector3(
         0,
         0,
-        i[0].point.z - this.startPoint.z);
+        p2.z - this.startPoint.z);
       break;
     }
   }
+
+  //console.log(p2.y - this.startPoint.y);
 
 
   off.add(this.refPoint);
