@@ -134,7 +134,7 @@ Translator.prototype.action = function(raycaster) {
 
   return true;
 };
-Translator.prototype.move = function(raycaster) {
+Translator.prototype.move = function(raycaster, mid) {
   var ref;
 
   switch (this.axis) {
@@ -173,14 +173,16 @@ Translator.prototype.move = function(raycaster) {
     }
   }
 
-  sock.send(JSON.stringify({
-    'type': '3d-translate',
-    'tx': off.x,
-    'ty': off.y,
-    'tz': off.z
-  }));
 
   off.add(this.refPoint);
+  var diff = off.clone().sub(this.object.data.pos);
+  sock.send(JSON.stringify({
+    'type': '3d-translate',
+    'id': this.object.data.id,
+    'tx': diff.x,
+    'ty': diff.y,
+    'tz': diff.z
+  }));
   this.object.data.pos.copy(off);
 
   this.remove(this.scene);
@@ -373,6 +375,7 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
           isMouseDown = false;
           isMouseDragging = false;
           if (editor) {
+            editor.move(raycaster, false);
             editor.remove(scene);
             editor = null;
           }
@@ -391,7 +394,7 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
 
           if (isMouseDragging) {
             if (editor && selected) {
-              editor.move(raycaster);
+              editor.move(raycaster, true);
               update();
               return;
             }
@@ -491,7 +494,7 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
     var nextID = 2;
 
     this.sceneID = $routeParams['sceneID'];
-    this.items = [];
+    this.items = {};
 
     this.addCube = function() {
       var id = Math.floor(Math.random() * 1000000);
@@ -547,18 +550,26 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
           return;
         }
 
-        sock.onmessage = function(msg) {
-          var data = JSON.parse(msg.data);
-
-          switch (data.type) {
-            case 'obj-create': {
-              console.log(data.data);
-              this.items[data.data.id] = new Cube(data.data);
-              break;
+        switch (data.type) {
+          case 'scene': {
+            for (var i in data.scene.objs) {
+              this.items[data.scene.objs[i].id] = new Cube(data.scene.objs[i]);
             }
+            break;
           }
-          $rootScope.$emit('change');
-        }.bind(this);
+          case 'obj-create': {
+            this.items[data.data.id] = new Cube(data.data);
+            break;
+          }
+          case '3d-translate': {
+            var item = this.items[data.id];
+            item.pos.x += data.tx;
+            item.pos.y += data.ty;
+            item.pos.z += data.tz;
+            break;
+          }
+        }
+        $rootScope.$emit('change');
       }.bind(this);
     }.bind(this);
 

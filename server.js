@@ -59,7 +59,7 @@ User.all = { 'token': new User('Jeff') };
 function Scene(id) {
   this.id = id;
   this.users = [];
-  this.objs = [];
+  this.objs = {};
 }
 
 /**
@@ -71,9 +71,7 @@ Scene.prototype.getData = function() {
     users: this.users.map(function(user) {
       return user.name;
     }),
-    objs: this.objs.map(function(obj) {
-      return obj;
-    })
+    objs: this.objs
   }
 };
 
@@ -214,7 +212,7 @@ Scene.all = { 'scene': new Scene('scene') };
       var stmt = db.prepare("INSERT OR IGNORE INTO users VALUES (?, ?)");
       stmt.run(id, name);
       stmt.finalize();
-      
+
       res.send(JSON.stringify({
         success: true,
         id: req.user.id,
@@ -299,7 +297,6 @@ Scene.all = { 'scene': new Scene('scene') };
         if (scene.users[i] == user) {
           continue;
         }
-        console.log('bcast');
         scene.users[i].conn.send(JSON.stringify(data));
       }
     };
@@ -328,6 +325,10 @@ Scene.all = { 'scene': new Scene('scene') };
           break;
         }
         case '3d-translate': {
+          var item = scene.objs[data.id];
+          item.px += data.tx;
+          item.py += data.ty;
+          item.pz += data.tz;
           scene.save();
           broadcast(data);
           break;
@@ -338,7 +339,8 @@ Scene.all = { 'scene': new Scene('scene') };
           break;
         }
         case 'obj-create': {
-          scene.objs.push({
+          scene.objs[data.data.id] = {
+            id: data.data.id,
             px: data.data.px || 0,
             py: data.data.py || 0,
             pz: data.data.pz || 0,
@@ -352,7 +354,7 @@ Scene.all = { 'scene': new Scene('scene') };
             rz: data.data.rz || 0,
 
             colour: data.data.colour || 0x333333
-          });
+          };
           scene.save();
           broadcast(data);
           break;
