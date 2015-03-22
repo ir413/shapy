@@ -36,6 +36,7 @@ function Translator(object) {
 };
 
 Translator.prototype.add = function(scene) {
+  this.scene = scene;
   // X cylinder.
   this.cylinderX = new THREE.Mesh(
       new THREE.CylinderGeometry(0, 0.2, 0.4, 50, 50, false), 
@@ -86,16 +87,49 @@ Translator.prototype.add = function(scene) {
 };
 
 Translator.prototype.action = function(raycaster) {
-  var intersects = raycaster.intersectObjects([
-      this.cylinderX, this.cylinderY, this.cylinderZ]);
-  
-  return intersects.length > 0;
+  var i;
+
+  this.refPoint = this.object.data.pos.clone();
+  if ((i = raycaster.intersectObject(this.cylinderX)).length > 0) {
+    this.startPoint = i[0].point;
+    this.ref = this.cylinderX;
+    this.axis = new THREE.Vector3(1, 0, 0);
+    return true;
+  }
+  if ((i = raycaster.intersectObject(this.cylinderY)).length > 0) {
+    this.startPoint = i[0].point;
+    this.ref = this.cylinderY;
+    this.axis = new THREE.Vector3(0, 1, 0);
+    return true;
+  }
+  if ((i = raycaster.intersectObject(this.cylinderZ)).length > 0) {
+    this.startPoint = i[0].point;
+    this.ref = this.cylinderZ;
+    this.axis = new THREE.Vector3(0, 0, 1);
+    return true;
+  }
+
+  return false;
 };
 Translator.prototype.move = function(raycaster) {
-  console.log('move');
+  var i = raycaster.intersectObject(this.ref);
+  if (i.length <= 0) {
+    return false;
+  }
+
+  var off = this.axis.clone();
+  off.multiplyScalar(i[0].point.distanceTo(this.startPoint));
+  off.add(this.refPoint);
+
+  this.object.data.pos.copy(off);
+  this.remove(this.scene);
+  this.add(this.scene);
+
+  return true;
 };
 
 Translator.prototype.remove = function(scene) {
+  this.scene = scene;
   if (this.cylinderX) {
     scene.remove(this.cylinderX);
     this.cylinderX = null;
@@ -158,7 +192,7 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
         // Mouse vars.
         var mouse = new THREE.Vector3(0, 0, 0);
         var isMouseDown = false;
-        var isActionDragging = false;
+        var isMouseDragging = false;
         var onMouseDownX = 0;
         var onMouseDownY = 0;
         var onMouseDownRot = null;
@@ -236,7 +270,7 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
         // Detect mouse down.
         $elem.on('mousedown', function(event) {
           isMouseDown = true;
-          isActionDragging = true;
+
           // Record the position of mouse down.
           onMouseDownX = event.pageX; 
           onMouseDownY = event.pageY;
@@ -244,8 +278,8 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
 
           // Check if markers were clicked.
           if (editor && editor.action(raycaster)) {
+            isMouseDragging = true;
             isMouseDown = false;
-            $scope.$emit('change');
             return;
           } else if (editor) {
             editor.remove(scene);
@@ -272,6 +306,7 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
         // Detect mouse up.
         $elem.on('mouseup', function(event) {
           isMouseDown = false;
+          isMouseDragging = false;
         });
 
         // Detect mouse position.
@@ -279,10 +314,22 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
           // Calculate mouse position in (-1, 1)
           mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
           mouse.y = -((event.clientY - 50) / (window.innerHeight - 50)) * 2 + 1;
+          console.log(event.clientY - 50);
           mouse.z = 0.5;
 
           var vector = mouse.clone().unproject(camera);
           raycaster.set(camera.position, vector.sub( camera.position ).normalize());
+
+          if (isMouseDragging) {
+            if (editor) {
+              if (!editor.move(raycaster)) {
+                isMouseDragging = false;
+              } else {
+                $scope.$emit('change');
+              }
+            }
+            return;
+          }
 
           // Update rotation only if mouse is down.
           if (!isMouseDown) {
@@ -340,6 +387,7 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
         });
 
         $rootScope.$on('change', function() { 
+          console.log('x');
           // Update the cubeMap.
           for (var key in $scope.items) {
             if (!$scope.items.hasOwnProperty(key)) {
@@ -355,10 +403,10 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
                   new THREE.BoxGeometry(cube.size.x, cube.size.y, cube.size.z), 
                   new THREE.MeshLambertMaterial( {color: cube.colour } ) 
                 );
-              cubeMap[cube.id].data = cube;
-              cubeMap[cube.id].position.copy(cube.pos.clone());
-              scene.add(cubeMap[cube.id]);
             }
+            cubeMap[cube.id].data = cube;
+            cubeMap[cube.id].position.copy(cube.pos);
+            scene.add(cubeMap[cube.id]);
           }
 
           // Remove the deleted cubes from the cubeMap
