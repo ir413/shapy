@@ -36,8 +36,6 @@ function Translator(object) {
 };
 
 Translator.prototype.add = function(scene) {
-  console.log(this.object);
-
   // X cylinder.
   this.cylinderX = new THREE.Mesh(
       new THREE.CylinderGeometry(0, 0.2, 0.4, 50, 50, false), 
@@ -87,6 +85,16 @@ Translator.prototype.add = function(scene) {
   scene.add(this.cylinderZ);
 };
 
+Translator.prototype.action = function(raycaster) {
+  var intersects = raycaster.intersectObjects([
+      this.cylinderX, this.cylinderY, this.cylinderZ]);
+  
+  return intersects.length > 0;
+};
+Translator.prototype.move = function(raycaster) {
+  console.log('move');
+};
+
 Translator.prototype.remove = function(scene) {
   if (this.cylinderX) {
     scene.remove(this.cylinderX);
@@ -103,8 +111,6 @@ Translator.prototype.remove = function(scene) {
     this.cylinderZ = null;
   }
 };
-
-
 
 function Rotator(object) {
   this.object = object;
@@ -152,6 +158,7 @@ angular.module('shapyEditor', ['ngCookies'])
         // Mouse vars.
         var mouse = new THREE.Vector3(0, 0, 0);
         var isMouseDown = false;
+        var isActionDragging = false;
         var onMouseDownX = 0;
         var onMouseDownY = 0;
         var onMouseDownRot = null;
@@ -227,27 +234,34 @@ angular.module('shapyEditor', ['ngCookies'])
         // Detect mouse down.
         $elem.on('mousedown', function(event) {
           isMouseDown = true;
+          isActionDragging = true;
           // Record the position of mouse down.
           onMouseDownX = event.pageX; 
           onMouseDownY = event.pageY;
           onMouseDownRot = cameraRot.clone();
 
-          // Get the objects.
-          if (editor) {
+          // Check if markers were clicked.
+          if (editor && editor.action(raycaster)) {
+            isMouseDown = false;
+            $scope.$emit('change');
+            return;
+          } else if (editor) {
             editor.remove(scene);
             editor = null;
           }
+
+          // Get the objects.
           objects = []
           for (var cubeId in cubeMap) {
             objects.push(cubeMap[cubeId]);
             cubeMap[cubeId].material.color.set(cubeMap[cubeId].data.colour);
           }
-        
+          
           // Determine if the ray intersects any of the objects.
           var intersects = raycaster.intersectObjects(objects);
           if (intersects.length <= 0) {
             return;
-          }
+          }           
 
           selected = intersects[0];
           selected.object.material.color.set(0xff0000);
@@ -286,6 +300,7 @@ angular.module('shapyEditor', ['ngCookies'])
         });
 
         $(window).on('keypress', function(event) {
+          console.log(event.charCode);
           if (editor) {
             editor.remove(scene);
             editor = null;
