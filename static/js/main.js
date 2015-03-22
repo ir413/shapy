@@ -69,7 +69,7 @@ angular.module('shapy', ['ngRoute', 'shapyEditor', 'shapyScenes'])
           this.user = new User(resp.id, resp.name, resp.token);
           return this.user;
         }.bind(this), function() {
-          window.location.replace('/auth/facebook');
+          //window.location.replace('/auth/facebook');
         });
     };
   });

@@ -60,6 +60,12 @@ function Scene(id) {
   this.id = id;
   this.users = [];
   this.objs = {};
+
+  db.each("SELECT * FROM scenes WHERE id='" + this.id + "'", function(err, row) {
+    this.name = row.scenename || 'adsdsa';
+    this.owner = row.owner || '878431572216494';
+    this.objs = JSON.parse(row.data);
+  });
 }
 
 /**
@@ -80,14 +86,17 @@ Scene.prototype.getData = function() {
  * Saves the scene.
  */
 Scene.prototype.save = function() {
-
+  var objsJSON = JSON.stringify(this.objs)
+  var stmt = db.prepare("INSERT OR REPLACE INTO scenes VALUES (?, ?, ?, ?)");
+  stmt.run(this.id, this.name, JSON.stringify(this.objs), this.owner);
+  stmt.finalize();
 };
 
 
 /**
  * Active scenes in memory.
  */
-Scene.all = { 'scene': new Scene('scene') };
+Scene.all = { };
 
 
 // Set up the database.
@@ -181,6 +190,22 @@ Scene.all = { 'scene': new Scene('scene') };
         });
   });
 
+  //$http.post('/v1/scene', { id: 'id', name: 'name'});
+
+  app.post('/v1/scene', function(req, res) {
+    var id = req.body.id;
+    var name = req.body.name;
+
+    if (id in Scene.all) {
+      Scene.all[id].name = name;
+      Scene.all[id].save();
+    } else {
+      var scene = new Scene(id);
+      scene.name = name;
+      scene.save();
+    }
+  });
+
   app.post('/v1/screenshot', function(req, res) {
     var out = fs.createWriteStream(path.join(__dirname, 'static/img/', req.body.name + '.png'));
     out.write(req.body.data);
@@ -192,7 +217,7 @@ Scene.all = { 'scene': new Scene('scene') };
 
   // Callback function after Facebook login
   app.get('/auth/facebook/callback', passport.authenticate('facebook', {
-      successRedirect : '/#/editor/1',
+      successRedirect : '/',
       failureRedirect : '/login'
     }));
 
