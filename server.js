@@ -117,7 +117,7 @@ Scene.all = { 'scene': new Scene('scene') };
 
     var stmt = db.prepare("INSERT OR IGNORE INTO users VALUES (?, ?)");
     stmt.run(878431572216494, 'RaduSzasz');
-    stmt.run(10203913346743504, 'Michal Sienkiewicz');
+    stmt.run(10203913346743504, 'MichałSienkiewicz');
     stmt.finalize();
   });
 }

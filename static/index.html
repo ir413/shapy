@@ -19,10 +19,10 @@
   <body ng-autobind>
     <shapy-login>
       <div ng-hide="mainCtrl.user">
-        <a href="/auth/facebook">Login with Facebook</a>
+        <a href="/auth/facebook"><h5 style="margin-left:10px">Login with Facebook</h5></a>
       </div>
       <div ng-show="mainCtrl.user">
-        {{mainCtrl.user.name}}
+        <h5 style="font-style:italic; margin-left:10px">Logged in as: {{mainCtrl.user.name}} </h5>
       </div>
     </shapy-login>
     <div id="content" ng-view></div>
