@@ -1,13 +1,9 @@
-<div ng-controller="ScreenshotCtrl">
-<script type="text/ng-template" id="screenshotWindow.html">
-  <div class="modal-header">
-    <h3 class="modal-title">Screenshot</h3>
-  </div>
-  <div class="modal-body">
-    
-  </div>
-  <div class="modal-footer">
-    <button class="btn btn-primary" ng-click="ok()">OK</button>
-  </div>
-</script>
+<div class="modal-header">
+	<h3 class="modal-title">Screenshot</h3>
+</div>
+<div class="modal-body">
+	<img width = "850px" src="{{screenCtrl.data}}"/>
+</div>
+<div class="modal-footer">
+	<button class="btn btn-primary" ng-click="ok()">OK</button>
 </div>

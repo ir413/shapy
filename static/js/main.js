@@ -53,7 +53,7 @@ angular.module('shapy', ['ngRoute', 'shapyEditor', 'shapyScenes'])
       this.user = user;
     }.bind(this));
   })
-  .service('shapyUsers', function($q, $http) {
+  .service('shapyUsers', function($q, $http, $location) {
     this.user = null;
 
     this.getUser = function() {
@@ -68,6 +68,8 @@ angular.module('shapy', ['ngRoute', 'shapyEditor', 'shapyScenes'])
           var resp = data.data;
           this.user = new User(resp.id, resp.name, resp.token);
           return this.user;
-        }.bind(this));
+        }.bind(this), function() {
+          window.location.replace('/auth/facebook');
+        });
     };
   });

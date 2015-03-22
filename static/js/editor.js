@@ -2,11 +2,13 @@ var ZOOM_SPEED = 0.2;
 var ROT_SPEED = 0.01;
 var sock, editor;
 
+
+
 /**
  * Cube representation.
  */
-function Cube(id, data) {
-  this. id = id;
+function Cube(data) {
+  this.id = data.id;
   this.pos = new THREE.Vector3(
     data.px || 0, 
     data.py || 0, 
@@ -25,6 +27,27 @@ function Cube(id, data) {
     data.rz || 1);
   this.colour = data.colour || 0x333333;
 }
+
+
+Cube.prototype.getData = function() {
+  return {
+    id: this.id, 
+
+    px: this.pos.x,
+    py: this.pos.y,
+    pz: this.pos.z,
+
+    rx: this.rot.x,
+    ry: this.rot.y,
+    rz: this.rot.z,
+
+    sx: this.scale.x,
+    sy: this.scale.y,
+    sz: this.scale.z,
+
+    colour: this.colour
+  };
+};
 
 
 function Translator(object) {
@@ -217,7 +240,7 @@ Scaler.prototype.remove = function(scene) {
  */
 cubeMap = {};
 
-angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
+angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
   .directive('shapyCanvas', function($rootScope) {
     return {
       restrict: 'E',
@@ -262,7 +285,7 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
         }
 
         // Create the renderer.
-        var renderer = new THREE.WebGLRenderer({
+        renderer = new THREE.WebGLRenderer({
             preserveDrawingBuffer : true
         });
 
@@ -464,23 +487,47 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
       }
     }
   })
-  .controller('EditorController', function($rootScope, $routeParams, $location, user) {
+  .controller('EditorController', function($rootScope, $routeParams, $location, $modal, $http, user) {
     var nextID = 2;
 
     this.sceneID = $routeParams['sceneID'];
-    this.items = {
-      0: new Cube(0,
-        {px: 0, py: 0, pz: 0, width: 20, height: 0.1, depth: 20}
-      ),
-      1: new Cube(1,
-        {px: 0, py: 0, pz: 3}
-      )
-    };
+    this.items = [];
 
     this.addCube = function() {
-      this.items[++nextID] = new Cube(nextID, {});
+      var id = Math.floor(Math.random() * 1000000);
+      this.items[id] = new Cube({id: id});
+      sock.send(JSON.stringify({
+        'type': 'obj-create',
+        'data': this.items[id].getData()
+      }));
       $rootScope.$emit('change');
-    }
+    };
+
+    this.snapshot = function() {
+        var name = Math.floor(Math.random() * 1000) + '';
+        var data = renderer.domElement.toDataURL("image/png");
+        $http.post('/v1/screenshot', { data: data, name: name })
+          .success(function() {
+            console.log('success');
+            $modal.open({
+              templateUrl: 'screenshot.html',
+              controller: 'ScreenshotCtrl',
+              controllerAs: 'screenCtrl',
+              size: 'lg',
+              resolve: {
+                items: function () {
+                  return user;
+                },
+                name: function() {
+                  return name;
+                },
+                data: function() {
+                  return data;
+                }
+              }
+            })
+          });
+    };
 
     // Open up the websockets connection.
     sock = new WebSocket("ws://localhost:8001");
@@ -494,16 +541,24 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
         var data;
 
         try {
-          data = JSON.parse(msg);
+          data = JSON.parse(msg.data);
         } catch (e) {
-          //$location.path('/');
+          console.log(e, msg.data);
           return;
         }
 
-        sock.send('{"type": "lol"}');
         sock.onmessage = function(msg) {
-          console.log('recv');
-        }
+          var data = JSON.parse(msg.data);
+
+          switch (data.type) {
+            case 'obj-create': {
+              console.log(data.data);
+              this.items[data.data.id] = new Cube(data.data);
+              break;
+            }
+          }
+          $rootScope.$emit('change');
+        }.bind(this);
       }.bind(this);
     }.bind(this);
 
