@@ -7,4 +7,9 @@ angular.module('shapyScenes', [])
       .success(function(scenes) {
         this.scenes = scenes;
       }.bind(this));
+  })
+  .filter('random', function () {
+    return function(limit) {
+      return 10 + Math.floor(Math.random() * limit);
+    };
   });

@@ -28,3 +28,10 @@ canvas {
   width: 45px;
   height: 45px;
 }
+
+.scenerow {
+  text-align: left;
+  width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}

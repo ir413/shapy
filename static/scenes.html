@@ -1,9 +1,38 @@
 
-<h1> Scenes currently being created:<h1>
-<div ng-repeat="scene in sceneCtrl.scenes">
-  <a ng-href="/#/editor/{{scene.id}}" class="btn btn-default btn-lg" role="button">
-    <span>{{scene.scenename}}</span>
-    by
-    <span>{{scene.owner}}</span>
+<style>
+  h1 {
+    display:inline;
+  }
+  #scenelink {
+    display:inline-block;
+    width: 600px;
+  }
+  input {
+    width: 200px;
+  }
+  #newscene {
+    background-color: #FF5959;
+  }
+</style>
+
+<center>
+  <h1> Scenes currently being created:</h1>
+  <input type="text" placeholder="Search" ng-model="query">
+</center>
+</br>
+</br>
+<div class="scenerow" ng-repeat="scene in sceneCtrl.scenes | filter:query">
+  <a id="scenelink" ng-href="/#/editor/{{scene.id}}" class="btn btn-default btn-lg" role="button">
+    {{scene.scenename}}
   </a>
+  <span style="font-weight:bold;">by</span>
+  <span style="font-weight:lighter; font-style:italic; color=grey">{{scene.owner}}</span>
 </div>
+
+</br>
+<center>
+  <a id ="newscene" ng-href="/#/editor/{{ 300 | random}}" class="btn btn-default btn-lg" role="button">
+    Create New Scene!
+  </a>
+</center>
+
