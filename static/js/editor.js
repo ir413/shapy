@@ -29,7 +29,7 @@ function Cube(id, data) {
  */
 cubeMap = {};
 
-angular.module('shapyEditor', ['ngCookies'])
+angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
   .directive('shapyCanvas', function($rootScope) {
     return {
       restrict: 'E',
@@ -64,7 +64,9 @@ angular.module('shapyEditor', ['ngCookies'])
         }
 
         // Create the renderer.
-        var renderer = new THREE.WebGLRenderer();
+        var renderer = new THREE.WebGLRenderer({
+            preserveDrawingBuffer : true
+        });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setClearColorHex(0xcccccc, 1);
         $elem.append(renderer.domElement);
