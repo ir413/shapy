@@ -39,7 +39,7 @@ Translator.prototype.add = function(scene) {
   this.scene = scene;
   // X cylinder.
   this.cylinderX = new THREE.Mesh(
-      new THREE.CylinderGeometry(0, 0.2, 0.4, 50, 50, false), 
+      new THREE.CylinderGeometry(0, 0.4, 0.8, 50, 50, false), 
       new THREE.MeshBasicMaterial({ color: 0xFF0000}));
   this.cylinderX.position.set(
       this.object.data.pos.x + this.object.data.size.x / 2 + 0.23,
@@ -55,7 +55,7 @@ Translator.prototype.add = function(scene) {
 
   // Y cylinder
   this.cylinderY = new THREE.Mesh(
-      new THREE.CylinderGeometry(0, 0.2, 0.4, 50, 50, false), 
+      new THREE.CylinderGeometry(0, 0.4, 0.8, 50, 50, false), 
       new THREE.MeshBasicMaterial({ color: 0x00FF00}));
   this.cylinderY.position.set(
       this.object.data.pos.x,
@@ -71,7 +71,7 @@ Translator.prototype.add = function(scene) {
 
   // Z cylinder.  
   this.cylinderZ = new THREE.Mesh(
-      new THREE.CylinderGeometry(0, 0.2, 0.4, 50, 50, false), 
+      new THREE.CylinderGeometry(0, 0.4, 0.8, 50, 50, false), 
       new THREE.MeshBasicMaterial({ color: 0x0000FF}));
   this.cylinderZ.position.set(
       this.object.data.pos.x,
