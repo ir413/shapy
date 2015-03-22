@@ -241,9 +241,20 @@ Scene.all = { 'scene': new Scene('scene') };
         type: 'scene',
         scene: scene.getData()
       }));
-      console.log(scene.getData());
     }
     ws.on('message', onAuthMessage);
+
+    /**
+     * Broadcasts a message to all users.
+     */
+    var broadcast = function(data) {
+      for (var i = 0; i < scene.users.length; ++i) {
+        if (scene.users[i] == user) {
+          continue;
+        }
+        scene.users[i].conn.send(JSON.stringify(data));
+      }
+    };
 
     /**
      * Handles an incoming message.
@@ -263,18 +274,23 @@ Scene.all = { 'scene': new Scene('scene') };
 
       switch (data.type) {
         case '3d-rotate': {
+          broadcast(data);
           break;
         }
         case '3d-translate': {
+          broadcast(data);
           break;
         }
         case '3d-scale': {
+          broadcast(data);
           break;
         }
         case 'obj-create': {
+          broadcast(data);
           break;
         }
         case 'obj-delete': {
+          broadcast(data);
           break;
         }
         default: {

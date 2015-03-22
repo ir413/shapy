@@ -91,37 +91,75 @@ Translator.prototype.action = function(raycaster) {
 
   this.refPoint = this.object.data.pos.clone();
   if ((i = raycaster.intersectObject(this.cylinderX)).length > 0) {
-    this.startPoint = i[0].point;
+    this.startPoint = i[0].point.clone();
     this.ref = this.cylinderX;
-    this.axis = new THREE.Vector3(1, 0, 0);
+    this.axis = 'x';
     return true;
   }
   if ((i = raycaster.intersectObject(this.cylinderY)).length > 0) {
-    this.startPoint = i[0].point;
+    this.startPoint = i[0].point.clone();
     this.ref = this.cylinderY;
-    this.axis = new THREE.Vector3(0, 1, 0);
+    this.axis = 'y';
     return true;
   }
   if ((i = raycaster.intersectObject(this.cylinderZ)).length > 0) {
-    this.startPoint = i[0].point;
+    this.startPoint = i[0].point.clone();
     this.ref = this.cylinderZ;
-    this.axis = new THREE.Vector3(0, 0, 1);
+    this.axis = 'z';
     return true;
   }
 
-  return false;
+  return true;
 };
 Translator.prototype.move = function(raycaster) {
-  var i = raycaster.intersectObject(this.ref);
+  var ref;
+
+  switch (this.axis) {
+    case 'x': ref = this.cylinderX; break;
+    case 'y': ref = this.cylinderY; break;
+    case 'z': ref = this.cylinderZ; break;
+  }
+
+  var i = raycaster.intersectObject(ref);
   if (i.length <= 0) {
     return false;
   }
 
-  var off = this.axis.clone();
-  off.multiplyScalar(i[0].point.distanceTo(this.startPoint));
-  off.add(this.refPoint);
+  var off;
+  switch (this.axis) {
+    case 'x': {
+      off = new THREE.Vector3(
+        i[0].point.x - this.startPoint.x,
+        0,
+        0);
+      break;
+    }
+    case 'y': {
+      off = new THREE.Vector3(
+        0,
+        i[0].point.y - this.startPoint.y,
+        0);
+      break;
+    }
+    case 'z': {
+      off = new THREE.Vector3(
+        0,
+        0,
+        i[0].point.z - this.startPoint.z);
+      break;
+    }
+  }
 
+  sock.send(JSON.stringify({
+    'type': '3d-translate',
+    'tx': off.x,
+    'ty': off.y,
+    'tz': off.z
+  }));
+
+  off.add(this.refPoint);
   this.object.data.pos.copy(off);
+
   this.remove(this.scene);
   this.add(this.scene);
 
@@ -227,12 +265,16 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
         var renderer = new THREE.WebGLRenderer({
             preserveDrawingBuffer : true
         });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        renderer.setSize(window.innerWidth, window.innerHeight - 40);
         renderer.setClearColor(0xcccccc, 1);
         $elem.append(renderer.domElement);
 
         // Set the camera.
-        camera = new THREE.PerspectiveCamera( 70, window.innerWidth / (window.innerHeight - 50), 1, 1000 );
+        camera = new THREE.PerspectiveCamera(
+            45, 
+            renderer.domElement.width / renderer.domElement.height, 
+            0.1, 1000 );
         updateCamera();
 
         // Set the scene.
@@ -307,28 +349,29 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
         $elem.on('mouseup', function(event) {
           isMouseDown = false;
           isMouseDragging = false;
+          if (editor) {
+            editor.remove(scene);
+            editor = null;
+          }
         });
 
         // Detect mouse position.
         $elem.on('mousemove', function(event) {
           // Calculate mouse position in (-1, 1)
-          mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-          mouse.y = -((event.clientY - 50) / (window.innerHeight - 50)) * 2 + 1;
-          console.log(event.clientY - 50);
+          mouse.x = (event.pageX / renderer.domElement.width) * 2 - 1;
+          mouse.y = -((event.pageY - 40) / renderer.domElement.height) * 2 + 1;
+
           mouse.z = 0.5;
 
           var vector = mouse.clone().unproject(camera);
           raycaster.set(camera.position, vector.sub( camera.position ).normalize());
 
           if (isMouseDragging) {
-            if (editor) {
-              if (!editor.move(raycaster)) {
-                isMouseDragging = false;
-              } else {
-                $scope.$emit('change');
-              }
+            if (editor && selected) {
+              editor.move(raycaster);
+              update();
+              return;
             }
-            return;
           }
 
           // Update rotation only if mouse is down.
@@ -349,7 +392,6 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
         });
 
         $(window).on('keypress', function(event) {
-          console.log(event.charCode);
           if (editor) {
             editor.remove(scene);
             editor = null;
@@ -386,8 +428,7 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
           running = false;
         });
 
-        $rootScope.$on('change', function() { 
-          console.log('x');
+        function update() { 
           // Update the cubeMap.
           for (var key in $scope.items) {
             if (!$scope.items.hasOwnProperty(key)) {
@@ -403,19 +444,22 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap'])
                   new THREE.BoxGeometry(cube.size.x, cube.size.y, cube.size.z), 
                   new THREE.MeshLambertMaterial( {color: cube.colour } ) 
                 );
+              cubeMap[cube.id].data = cube;
+              scene.add(cubeMap[cube.id]);
             }
-            cubeMap[cube.id].data = cube;
             cubeMap[cube.id].position.copy(cube.pos);
-            scene.add(cubeMap[cube.id]);
           }
 
           // Remove the deleted cubes from the cubeMap
           for (var cubeId in cubeMap) {
             if (!(cubeId in $scope.items)) {
+              scene.remove(cubeMap[cubeId]);
               delete cubeMap[cubeId];
             }
           }
-        });
+        };
+
+        $rootScope.$on('change', update);
         $scope.$emit('change');
       }
     }
