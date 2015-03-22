@@ -348,6 +348,10 @@ Scene.all = { 'scene': new Scene('scene') };
           break;
         }
         case '3d-scale': {
+          var item = scene.objs[data.id];
+          item.sx = data.sx;
+          item.sy = data.sy;
+          item.sz = data.sz;
           scene.save();
           broadcast(data);
           break;

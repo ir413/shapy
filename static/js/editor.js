@@ -281,11 +281,94 @@ Scaler.prototype.add = function(scene) {
 };
 
 Scaler.prototype.action = function(raycaster) {
-  return false;
+  var i;
+
+  this.refPoint = this.object.data.pos.clone();
+  if ((i = raycaster.intersectObject(this.cubeX)).length > 0) {
+    this.startPoint = i[0].point.clone();
+    this.ref = this.cubeX;
+    this.axis = 'x';
+    return true;
+  }
+  if ((i = raycaster.intersectObject(this.cubeY)).length > 0) {
+    this.startPoint = i[0].point.clone();
+    this.ref = this.cubeY;
+    this.axis = 'y';
+    return true;
+  }
+  if ((i = raycaster.intersectObject(this.cubeZ)).length > 0) {
+    this.startPoint = i[0].point.clone();
+    this.ref = this.cubeZ;
+    this.axis = 'z';
+    return true;
+  }
+
+  return true;
 };
 
 Scaler.prototype.move = function(raycaster, mid) {
-  return false;
+var ref;
+
+  switch (this.axis) {
+    case 'x': ref = this.cubeX; break;
+    case 'y': ref = this.cubeY; break;
+    case 'z': ref = this.cubeZ; break;
+  }
+
+  var i = raycaster.intersectObject(ref);
+  if (i.length <= 0) {
+    return false;
+  }
+
+  var off;
+  switch (this.axis) {
+    case 'x': {
+      off = new THREE.Vector3(
+        i[0].point.x - this.startPoint.x,
+        0,
+        0);
+      break;
+    }
+    case 'y': {
+      off = new THREE.Vector3(
+        0,
+        i[0].point.y - this.startPoint.y,
+        0);
+      break;
+    }
+    case 'z': {
+      off = new THREE.Vector3(
+        0,
+        0,
+        i[0].point.z - this.startPoint.z);
+      break;
+    }
+  }
+  
+  //console.log(this.object.data);
+
+  console.log(this.object.data.size.x);
+
+  off.add(this.refPoint);
+  var diff = off.clone().sub(this.object.data.pos);
+  sock.send(JSON.stringify({
+    'type': '3d-scale',
+    'id': this.object.data.id,
+    'sx': this.object.data.size.x + diff.x,
+    'sy': this.object.data.size.y + diff.y,
+    'sz': this.object.data.size.z + diff.z
+  }));
+
+  this.object.data.size.x += diff.x;
+  this.object.data.size.y += diff.y;
+  this.object.data.size.z += diff.z;
+
+  console.log(cubeMap[this.object.data.id]);
+
+  this.remove(this.scene);
+  this.add(this.scene);
+
+  return true;
 };
 
 Scaler.prototype.remove = function(scene) {
@@ -562,7 +645,6 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
         });
 
         function update() { 
-          console.log('update');
           // Update the cubeMap.
           for (var key in $scope.items) {
             if (!$scope.items.hasOwnProperty(key)) {
@@ -575,12 +657,13 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
             if (!(cube.id in cubeMap)) {
               cubeMap[cube.id] 
                 = new THREE.Mesh(
-                  new THREE.BoxGeometry(cube.size.x, cube.size.y, cube.size.z), 
+                  new THREE.BoxGeometry(1, 1, 1), 
                   new THREE.MeshLambertMaterial( {color: cube.colour } ) 
                 );
               cubeMap[cube.id].data = cube;
               scene.add(cubeMap[cube.id]);
             }
+            cubeMap[cube.id].scale.copy(cube.size);
             cubeMap[cube.id].position.copy(cube.pos);
           }
 
