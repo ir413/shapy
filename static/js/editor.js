@@ -134,6 +134,7 @@ Translator.prototype.action = function(raycaster) {
 
   return true;
 };
+
 Translator.prototype.move = function(raycaster, mid) {
   var ref;
 
@@ -224,15 +225,85 @@ Rotator.prototype.remove = function(scene) {
 
 
 function Scaler(object) {
-  this.object = object;
+  this.object = object.object;
+  this.start = this.object.position.clone();
+  this.cubeX = null;
+  this.cubeY = null;
+  this.cubeZ = null;
 };
 
 Scaler.prototype.add = function(scene) {
+  this.scene = scene;
+  // Add cubeX
+  this.cubeX = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), 
+                              new THREE.MeshBasicMaterial({ color: 0xFF0000}));
+  this.cubeX.position.set(
+      this.object.data.pos.x + this.object.data.size.x / 2 + 0.23,
+      this.object.data.pos.y,
+      this.object.data.pos.z);
+  this.cubeX.rotation.set(
+      0,
+      0,
+      0
+    );
+  this.cubeX.overdraw = true;
+  scene.add(this.cubeX);  
 
+  // Add cubeY
+  this.cubeY = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), 
+                              new THREE.MeshBasicMaterial({ color: 0x00FF00}));
+  this.cubeY.position.set(
+      this.object.data.pos.x,
+      this.object.data.pos.y + this.object.data.size.y / 2 + 0.23,
+      this.object.data.pos.z);
+  this.cubeY.rotation.set(
+      0,
+      0,
+      0
+    );
+  this.cubeY.overdraw = true;
+  scene.add(this.cubeY);    
+
+  // Add cubeZ
+  this.cubeZ = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), 
+                              new THREE.MeshBasicMaterial({ color: 0x0000FF}));
+  this.cubeZ.position.set(
+      this.object.data.pos.x,
+      this.object.data.pos.y,
+      this.object.data.pos.z + this.object.data.size.z / 2 + 0.23);
+  this.cubeZ.rotation.set(
+      0,
+      0,
+      0
+    );
+  this.cubeZ.overdraw = true;
+  scene.add(this.cubeZ);   
+};
+
+Scaler.prototype.action = function(raycaster) {
+  return false;
+};
+
+Scaler.prototype.move = function(raycaster, mid) {
+  return false;
 };
 
 Scaler.prototype.remove = function(scene) {
+  this.scene = scene;
+  if (this.cubeX) {
+    scene.remove(this.cubeX);
+    this.cubeX = null;
+  }
 
+  if (this.cubeY) {
+    scene.remove(this.cubeY);
+    this.cubeY = null;
+  }
+
+  if (this.cubeZ) {
+    scene.remove(this.cubeZ);
+    this.cubeZ = null;
+  }    
 };
 
 
