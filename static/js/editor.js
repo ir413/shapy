@@ -448,8 +448,8 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
 
         // Camera parameters.
         var cameraPos = new THREE.Vector3(0, 0, 0);
-        var cameraRot = new THREE.Vector3(0, 0, 0);
-        var cameraZoom = 4.31;
+        var cameraRot = new THREE.Vector3(-Math.PI / 8, Math.PI / 4, Math.PI / 4);
+        var cameraZoom = 40;
 
         // Raycaster.
         var raycaster = new THREE.Raycaster();
