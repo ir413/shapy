@@ -5,8 +5,36 @@ var FacebookStrategy = require('passport-facebook').Strategy;
 var session = require('express-session');
 var config = require('./config');
 var passport = require('passport');
+var bodyParser = require('body-parser');
 var sqlite3 = require('sqlite3').verbose();
 var db = new sqlite3.Database('shapy.db');
+var fs = require('fs');
+var atob = require('atob');
+
+function dataURLToBlob(dataURL) {
+  var BASE64_MARKER = ';base64,';
+  if (dataURL.indexOf(BASE64_MARKER) == -1) {
+    var parts = dataURL.split(',');
+    var contentType = parts[0].split(':')[1];
+    var raw = decodeURIComponent(parts[1]);
+
+    return new Blob([raw], {type: contentType});
+  }
+
+  var parts = dataURL.split(BASE64_MARKER);
+  var contentType = parts[0].split(':')[1];
+  var raw = atob(parts[1]);
+  var rawLength = raw.length;
+
+  var uInt8Array = new Uint8Array(rawLength);
+
+  for (var i = 0; i < rawLength; ++i) {
+    uInt8Array[i] = raw.charCodeAt(i);
+  }
+  return String.fromCharCode.apply(null, uInt8Array);
+};
+
+
 
 /**
  * Authenticated user.
@@ -31,6 +59,7 @@ User.all = { 'token': new User('Jeff') };
 function Scene(id) {
   this.id = id;
   this.users = [];
+  this.objs = {};
 }
 
 /**
@@ -41,8 +70,17 @@ Scene.prototype.getData = function() {
     id: this.id,
     users: this.users.map(function(user) {
       return user.name;
-    })
+    }),
+    objs: this.objs
   }
+};
+
+
+/**
+ * Saves the scene.
+ */
+Scene.prototype.save = function() {
+
 };
 
 
@@ -116,6 +154,7 @@ Scene.all = { 'scene': new Scene('scene') };
       saveUninitialized: false,
       maxAge: 3600000
   }));
+  app.use(bodyParser.json());
   app.use(passport.initialize());
   app.use(passport.session());
   app.use(express.static(path.join(__dirname, 'static')));
@@ -142,12 +181,18 @@ Scene.all = { 'scene': new Scene('scene') };
         });
   });
 
+  app.post('/v1/screenshot', function(req, res) {
+    var out = fs.createWriteStream(path.join(__dirname, 'static/img/', req.body.name + '.png'));
+    out.write(req.body.data);
+    res.send('');
+  });
+
   // Go to authentification link
   app.get('/auth/facebook', passport.authenticate('facebook'));
 
   // Callback function after Facebook login
   app.get('/auth/facebook/callback', passport.authenticate('facebook', {
-      successRedirect : '/',
+      successRedirect : '/#/editor/1',
       failureRedirect : '/login'
     }));
 
@@ -241,9 +286,20 @@ Scene.all = { 'scene': new Scene('scene') };
         type: 'scene',
         scene: scene.getData()
       }));
-      console.log(scene.getData());
     }
     ws.on('message', onAuthMessage);
+
+    /**
+     * Broadcasts a message to all users.
+     */
+    var broadcast = function(data) {
+      for (var i = 0; i < scene.users.length; ++i) {
+        if (scene.users[i] == user) {
+          continue;
+        }
+        scene.users[i].conn.send(JSON.stringify(data));
+      }
+    };
 
     /**
      * Handles an incoming message.
@@ -259,22 +315,52 @@ Scene.all = { 'scene': new Scene('scene') };
         data = JSON.parse(msg); 
       } catch (e) {
         console.log('%s: malformed "%s"', user.token, msg);
+        return;
       }
 
       switch (data.type) {
         case '3d-rotate': {
+          scene.save();
+          broadcast(data);
           break;
         }
         case '3d-translate': {
+          var item = scene.objs[data.id];
+          item.px += data.tx;
+          item.py += data.ty;
+          item.pz += data.tz;
+          scene.save();
+          broadcast(data);
           break;
         }
         case '3d-scale': {
+          scene.save();
+          broadcast(data);
           break;
         }
         case 'obj-create': {
+          scene.objs[data.data.id] = {
+            id: data.data.id,
+            px: data.data.px || 0,
+            py: data.data.py || 0,
+            pz: data.data.pz || 0,
+            
+            sx: data.data.sx || 0,
+            sy: data.data.sy || 0,
+            sz: data.data.sz || 0,
+
+            rx: data.data.rx || 0,
+            ry: data.data.ry || 0,
+            rz: data.data.rz || 0,
+
+            colour: data.data.colour || 0x333333
+          };
+          scene.save();
+          broadcast(data);
           break;
         }
         case 'obj-delete': {
+          broadcast(data);
           break;
         }
         default: {
