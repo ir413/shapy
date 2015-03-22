@@ -22,9 +22,9 @@ function Cube(data) {
     data.sy || 1, 
     data.sz || 1);
   this.rot = new THREE.Vector3(
-    data.rx || 1,
-    data.ry || 1,
-    data.rz || 1);
+    data.rx || 0,
+    data.ry || 0,
+    data.rz || 0);
   this.colour = data.colour || 0x333333;
 }
 
@@ -62,7 +62,7 @@ Translator.prototype.add = function(scene) {
   this.scene = scene;
   // X cylinder.
   this.cylinderX = new THREE.Mesh(
-      new THREE.CylinderGeometry(0, 0.4, 0.8, 50, 50, false), 
+      new THREE.CylinderGeometry(0, 0.4, 1.3, 50, 50, false), 
       new THREE.MeshBasicMaterial({ color: 0xFF0000}));
   this.cylinderX.position.set(
       this.object.data.pos.x + this.object.data.size.x / 2 + 0.23,
@@ -78,7 +78,7 @@ Translator.prototype.add = function(scene) {
 
   // Y cylinder
   this.cylinderY = new THREE.Mesh(
-      new THREE.CylinderGeometry(0, 0.4, 0.8, 50, 50, false), 
+      new THREE.CylinderGeometry(0, 0.4, 1.3, 50, 50, false), 
       new THREE.MeshBasicMaterial({ color: 0x00FF00}));
   this.cylinderY.position.set(
       this.object.data.pos.x,
@@ -94,7 +94,7 @@ Translator.prototype.add = function(scene) {
 
   // Z cylinder.  
   this.cylinderZ = new THREE.Mesh(
-      new THREE.CylinderGeometry(0, 0.4, 0.8, 50, 50, false), 
+      new THREE.CylinderGeometry(0, 0.4, 1.3, 50, 50, false), 
       new THREE.MeshBasicMaterial({ color: 0x0000FF}));
   this.cylinderZ.position.set(
       this.object.data.pos.x,
@@ -134,25 +134,48 @@ Translator.prototype.action = function(raycaster) {
 
   return true;
 };
+
 Translator.prototype.move = function(raycaster, mid) {
   var ref;
 
   switch (this.axis) {
-    case 'x': ref = this.cylinderX; break;
-    case 'y': ref = this.cylinderY; break;
-    case 'z': ref = this.cylinderZ; break;
+    case 'x': v = new THREE.Vector3(1, 0, 0); ref = this.cylinderX; break;
+    case 'y': v = new THREE.Vector3(0, 1, 0); ref = this.cylinderY; break;
+    case 'z': v = new THREE.Vector3(0, 0, 1); ref = this.cylinderZ; break;
   }
+
+  var p = raycaster.ray.origin;
+  var q = ref.position;
+  var u = raycaster.ray.direction;
+
+  var a = u.dot(u);
+  var b = u.dot(v);
+  var e = v.dot(v);
+
+  var d = a * e - b * b;
+
+  var r = p.clone().sub(q);
+  var c = u.dot(r);
+  var f = v.dot(r);
+
+  var s = (b*f - c*e) / d;
+  var t = (a*f - b*c) / d;
+
+  var p1 = p.clone().add(u.clone().multiplyScalar(s));
+  var p2 = q.clone().add(v.clone().multiplyScalar(t));
+  /*
+  console.log(p1, p2);
 
   var i = raycaster.intersectObject(ref);
   if (i.length <= 0) {
     return false;
-  }
+  }*/
 
   var off;
   switch (this.axis) {
     case 'x': {
       off = new THREE.Vector3(
-        i[0].point.x - this.startPoint.x,
+        p2.x - this.startPoint.x,
         0,
         0);
       break;
@@ -160,7 +183,7 @@ Translator.prototype.move = function(raycaster, mid) {
     case 'y': {
       off = new THREE.Vector3(
         0,
-        i[0].point.y - this.startPoint.y,
+        p2.y - this.startPoint.y,
         0);
       break;
     }
@@ -168,10 +191,12 @@ Translator.prototype.move = function(raycaster, mid) {
       off = new THREE.Vector3(
         0,
         0,
-        i[0].point.z - this.startPoint.z);
+        p2.z - this.startPoint.z);
       break;
     }
   }
+
+  //console.log(p2.y - this.startPoint.y);
 
 
   off.add(this.refPoint);
@@ -224,15 +249,176 @@ Rotator.prototype.remove = function(scene) {
 
 
 function Scaler(object) {
-  this.object = object;
+  this.object = object.object;
+  this.start = this.object.position.clone();
+  this.cubeX = null;
+  this.cubeY = null;
+  this.cubeZ = null;
 };
 
 Scaler.prototype.add = function(scene) {
+  this.scene = scene;
+  // Add cubeX
+  this.cubeX = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), 
+                              new THREE.MeshBasicMaterial({ color: 0xFF0000}));
+  this.cubeX.position.set(
+      this.object.data.pos.x + this.object.data.size.x / 2 + 0.23,
+      this.object.data.pos.y,
+      this.object.data.pos.z);
+  this.cubeX.rotation.set(
+      0,
+      0,
+      0
+    );
+  this.cubeX.overdraw = true;
+  scene.add(this.cubeX);  
 
+  // Add cubeY
+  this.cubeY = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), 
+                              new THREE.MeshBasicMaterial({ color: 0x00FF00}));
+  this.cubeY.position.set(
+      this.object.data.pos.x,
+      this.object.data.pos.y + this.object.data.size.y / 2 + 0.23,
+      this.object.data.pos.z);
+  this.cubeY.rotation.set(
+      0,
+      0,
+      0
+    );
+  this.cubeY.overdraw = true;
+  scene.add(this.cubeY);    
+
+  // Add cubeZ
+  this.cubeZ = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), 
+                              new THREE.MeshBasicMaterial({ color: 0x0000FF}));
+  this.cubeZ.position.set(
+      this.object.data.pos.x,
+      this.object.data.pos.y,
+      this.object.data.pos.z + this.object.data.size.z / 2 + 0.23);
+  this.cubeZ.rotation.set(
+      0,
+      0,
+      0
+    );
+  this.cubeZ.overdraw = true;
+  scene.add(this.cubeZ);   
+};
+
+Scaler.prototype.action = function(raycaster) {
+  var i;
+
+  this.refPoint = this.object.data.size.clone();
+  if ((i = raycaster.intersectObject(this.cubeX)).length > 0) {
+    this.startPoint = i[0].point.clone();
+    this.ref = this.cubeX;
+    this.axis = 'x';
+    return true;
+  }
+  if ((i = raycaster.intersectObject(this.cubeY)).length > 0) {
+    this.startPoint = i[0].point.clone();
+    this.ref = this.cubeY;
+    this.axis = 'y';
+    return true;
+  }
+  if ((i = raycaster.intersectObject(this.cubeZ)).length > 0) {
+    this.startPoint = i[0].point.clone();
+    this.ref = this.cubeZ;
+    this.axis = 'z';
+    return true;
+  }
+
+  return true;
+};
+
+Scaler.prototype.move = function(raycaster, mid) {
+var ref;
+
+  switch (this.axis) {
+    case 'x': v = new THREE.Vector3(1, 0, 0); ref = this.cubeX; break;
+    case 'y': v = new THREE.Vector3(0, 1, 0); ref = this.cubeY; break;
+    case 'z': v = new THREE.Vector3(0, 0, 1); ref = this.cubeZ; break;
+  }
+
+  var p = raycaster.ray.origin;
+  var q = ref.position;
+  var u = raycaster.ray.direction;
+
+  var a = u.dot(u);
+  var b = u.dot(v);
+  var e = v.dot(v);
+
+  var d = a * e - b * b;
+
+  var r = p.clone().sub(q);
+  var c = u.dot(r);
+  var f = v.dot(r);
+
+  var s = (b*f - c*e) / d;
+  var t = (a*f - b*c) / d;
+
+  var p1 = p.clone().add(u.clone().multiplyScalar(s));
+  var p2 = q.clone().add(v.clone().multiplyScalar(t));
+  var i = raycaster.intersectObject(ref);
+
+  var off;
+  switch (this.axis) {
+    case 'x': {
+      off = new THREE.Vector3(
+        p2.x - this.startPoint.x,
+        0,
+        0);
+      break;
+    }
+    case 'y': {
+      off = new THREE.Vector3(
+        0,
+        p2.y - this.startPoint.y,
+        0);
+      break;
+    }
+    case 'z': {
+      off = new THREE.Vector3(
+        0,
+        0,
+        p2.z - this.startPoint.z);
+      break;
+    }
+  }
+
+  off.multiplyScalar(2).add(this.refPoint);
+  var diff = off.clone().sub(this.object.data.size);
+  sock.send(JSON.stringify({
+    'type': '3d-scale',
+    'id': this.object.data.id,
+    'sx': diff.x,
+    'sy': diff.y,
+    'sz': diff.z
+  }));
+
+  this.object.data.size.copy(off);
+
+  this.remove(this.scene);
+  this.add(this.scene);
+
+  return true;
 };
 
 Scaler.prototype.remove = function(scene) {
+  this.scene = scene;
+  if (this.cubeX) {
+    scene.remove(this.cubeX);
+    this.cubeX = null;
+  }
 
+  if (this.cubeY) {
+    scene.remove(this.cubeY);
+    this.cubeY = null;
+  }
+
+  if (this.cubeZ) {
+    scene.remove(this.cubeZ);
+    this.cubeZ = null;
+  }    
 };
 
 
@@ -243,7 +429,7 @@ Scaler.prototype.remove = function(scene) {
 cubeMap = {};
 
 angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
-  .directive('shapyCanvas', function($rootScope) {
+  .directive('shapyCanvas', function($rootScope, $modal) {
     return {
       restrict: 'E',
       scope: {
@@ -262,8 +448,8 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
 
         // Camera parameters.
         var cameraPos = new THREE.Vector3(0, 0, 0);
-        var cameraRot = new THREE.Vector3(0, 0, 0);
-        var cameraZoom = 4.31;
+        var cameraRot = new THREE.Vector3(-Math.PI / 8, Math.PI / 4, Math.PI / 4);
+        var cameraZoom = 40;
 
         // Raycaster.
         var raycaster = new THREE.Raycaster();
@@ -367,7 +553,8 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
           }           
 
           selected = intersects[0];
-          selected.object.material.color.set(0xff0000);
+          var colour = selected.object.material.color;
+          selected.object.material.color.copy(colour.multiplyScalar(1.3));
         });
 
         // Detect mouse up.
@@ -375,7 +562,6 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
           isMouseDown = false;
           isMouseDragging = false;
           if (editor) {
-            editor.move(raycaster, false);
             editor.remove(scene);
             editor = null;
           }
@@ -438,6 +624,41 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
               editor.add(scene);
               break;
             }
+            case 99: {
+              if (!selected) {
+                break;
+              }
+              var sel = selected;
+              var modal = $modal.open({
+                templateUrl: 'colour.html',
+                controller: function(selected) {
+                  this.r = (selected.object.data.colour >> 16) & 0xFF;
+                  this.g = (selected.object.data.colour >>  8) & 0xFF;
+                  this.b = (selected.object.data.colour >>  0) & 0xFF;
+
+                  $scope.$watch(function() {
+                    var r = parseInt(this.r);
+                    var g = parseInt(this.g);
+                    var b = parseInt(this.b);
+
+                    var mask = ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
+                    selected.object.data.colour = mask;
+                    $rootScope.$emit('change');
+                  }.bind(this));
+                  this.close = function() {
+                    modal.close();
+                  };
+                },
+                controllerAs: 'colourCtrl',
+                size: 'sm',
+                resolve: {
+                  selected: function () {
+                    return sel;
+                  }
+                }
+              });
+              break;
+            }
           }
         });
 
@@ -467,12 +688,13 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
             if (!(cube.id in cubeMap)) {
               cubeMap[cube.id] 
                 = new THREE.Mesh(
-                  new THREE.BoxGeometry(cube.size.x, cube.size.y, cube.size.z), 
+                  new THREE.BoxGeometry(1, 1, 1), 
                   new THREE.MeshLambertMaterial( {color: cube.colour } ) 
                 );
               cubeMap[cube.id].data = cube;
               scene.add(cubeMap[cube.id]);
             }
+            cubeMap[cube.id].scale.copy(cube.size);
             cubeMap[cube.id].position.copy(cube.pos);
           }
 
@@ -482,6 +704,10 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
               scene.remove(cubeMap[cubeId]);
               delete cubeMap[cubeId];
             }
+          }
+
+          if (selected) {
+            selected.object.material.color.set(selected.object.data.colour);
           }
         };
 
@@ -511,7 +737,6 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
         var data = renderer.domElement.toDataURL("image/png");
         $http.post('/v1/screenshot', { data: data, name: name })
           .success(function() {
-            console.log('success');
             $modal.open({
               templateUrl: 'screenshot.html',
               controller: 'ScreenshotCtrl',
@@ -566,6 +791,13 @@ angular.module('shapyEditor', ['ngCookies', 'ui.bootstrap', 'shapyScreenshot'])
             item.pos.x += data.tx;
             item.pos.y += data.ty;
             item.pos.z += data.tz;
+            break;
+          }
+          case '3d-scale': {
+            var item = this.items[data.id];
+            item.size.x += data.sx;
+            item.size.y += data.sy;
+            item.size.z += data.sz;
             break;
           }
         }

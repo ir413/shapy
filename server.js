@@ -53,19 +53,50 @@ function User(id, name, token) {
 User.all = { 'token': new User('Jeff') };
 
 
+function getScene(sceneId, callback) {
+  // Validate the scene or create a new one.
+  if (!(sceneId in Scene.all)) {
+    // Create a new scene & assign it to the user.
+    Scene.all[sceneId] = new Scene(sceneId, callback);
+  } else {
+    callback(Scene.all[sceneId]);
+  }
+}
+
 /** 
  * Object representing a 3D scene that can be edited.
  */
-function Scene(id) {
+function Scene(id, callback) {
   this.id = id;
   this.users = [];
   this.objs = {};
+  this.name = 'aaa';
+  this.owner = '878431572216494';
 
   db.each("SELECT * FROM scenes WHERE id='" + this.id + "'", function(err, row) {
-    this.name = row.scenename || 'adsdsa';
+    this.name = row.scenename || this.name;
     this.owner = row.owner || '878431572216494';
     this.objs = JSON.parse(row.data);
-  });
+
+    this.objs = this.objs || {
+      1: {
+        id: 1,
+        width: 30,
+        height: 0.2,
+        depth: 30,
+        sx: 1,
+        sy: 1,
+        sz: 1,
+        rx: 0,
+        ry: 0,
+        rz: 0,
+        colour: 0x555555
+      }
+    };
+    if (callback) {
+      callback(this);
+    }
+  }.bind(this));
 }
 
 /**
@@ -263,7 +294,6 @@ Scene.all = { };
       var data, token, sceneId;
 
       ws.removeListener('message', onAuthMessage);
-      ws.on('message', onMessage);
 
       // Extract token & scene id.
       try {
@@ -284,34 +314,30 @@ Scene.all = { };
         ws.terminate();
         return;
       }
+      getScene(sceneId, function(cs) {
+        // Add user to the scene.
+        scene = cs;
+        console.log(cs);
+        user.scene = scene;
+        scene.users.push(user);
 
-      // Validate the scene or create a new one.
-      if (!(sceneId in Scene.all)) {
-        // Create a new scene & assign it to the user.
-        Scene.all[sceneId] = new Scene(sceneId);
-      }
-
-      // Add user to the scene.
-      scene = Scene.all[sceneId];
-      user.scene = scene;
-      scene.users.push(user);
-
-      // Set the user's connection.
-      if (user.conn != null) {
-        console.log('%s: duplicate', token);
+        // Set the user's connection.
+        if (user.conn != null) {
+          console.log('%s: duplicate', token);
+          ws.send(JSON.stringify({
+            type: 'duplicate'
+          }));
+          return;
+        }
+        user.conn = ws;
+        // Send a message indicating a successfull connection.
         ws.send(JSON.stringify({
-          type: 'duplicate'
+          type: 'scene',
+          scene: scene.getData()
         }));
-        return;
-      }
-      user.conn = ws;
-
-      // Send a message indicating a successfull connection.
-      ws.send(JSON.stringify({
-        type: 'scene',
-        scene: scene.getData()
-      }));
-    }
+        ws.on('message', onMessage);
+      });
+    };
     ws.on('message', onAuthMessage);
 
     /**
@@ -359,6 +385,10 @@ Scene.all = { };
           break;
         }
         case '3d-scale': {
+          var item = scene.objs[data.id];
+          item.width += data.sx;
+          item.height += data.sy;
+          item.depth += data.sz;
           scene.save();
           broadcast(data);
           break;
@@ -366,13 +396,18 @@ Scene.all = { };
         case 'obj-create': {
           scene.objs[data.data.id] = {
             id: data.data.id,
+            
+            width: data.data.width || 1,
+            height: data.data.height || 1,
+            depth: data.data.depth || 1,
+
             px: data.data.px || 0,
             py: data.data.py || 0,
             pz: data.data.pz || 0,
             
-            sx: data.data.sx || 0,
-            sy: data.data.sy || 0,
-            sz: data.data.sz || 0,
+            sx: data.data.sx || 1,
+            sy: data.data.sy || 1,
+            sz: data.data.sz || 1,
 
             rx: data.data.rx || 0,
             ry: data.data.ry || 0,
