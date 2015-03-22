@@ -74,11 +74,12 @@ Scene.all = { 'scene': new Scene('scene') };
     var stmt = db.prepare("INSERT OR IGNORE INTO scenes VALUES (?, ?, ?, ?)");
     stmt.run(1, 'Example scene', '{}', 878431572216494);
     stmt.run(2, 'City of cubes', '{}', 878431572216494);
-    stmt.run(3, 'Model of Ilija\'s thought process', '{}', 878431572216494);
+    stmt.run(3, 'Model of Ilija\'s thought process', '{}', 10203913346743504);
     stmt.finalize();
 
     var stmt = db.prepare("INSERT OR IGNORE INTO users VALUES (?, ?)");
     stmt.run(878431572216494, 'RaduSzasz');
+    stmt.run(10203913346743504, 'Michal Sienkiewicz');
     stmt.finalize();
   });
 }
@@ -163,7 +164,6 @@ Scene.all = { 'scene': new Scene('scene') };
       var id = req.user.id;
       var name = req.user.name.givenName + req.user.name.familyName;
       User.all[token] = new User(id, name);
-
       var stmt = db.prepare("INSERT OR IGNORE INTO users VALUES (?, ?)");
       stmt.run(id, name);
       stmt.finalize();
