@@ -57,7 +57,7 @@ function getScene(sceneId, callback) {
   // Validate the scene or create a new one.
   if (!(sceneId in Scene.all)) {
     // Create a new scene & assign it to the user.
-    Scene.all[sceneId] = new Scene(sceneId, callback);
+    new Scene(sceneId, callback);
   } else {
     callback(Scene.all[sceneId]);
   }
@@ -67,6 +67,7 @@ function getScene(sceneId, callback) {
  * Object representing a 3D scene that can be edited.
  */
 function Scene(id, callback) {
+  Scene.all[id] = this;
   this.id = id;
   this.users = [];
   this.objs = {};
@@ -78,8 +79,8 @@ function Scene(id, callback) {
     this.owner = row.owner || '878431572216494';
     this.objs = JSON.parse(row.data);
 
-    this.objs = this.objs || {
-      1: {
+    if (!(1 in this.objs)) {
+      this.objs[1] = {
         id: 1,
         width: 30,
         height: 0.2,
@@ -91,8 +92,8 @@ function Scene(id, callback) {
         ry: 0,
         rz: 0,
         colour: 0x555555
-      }
-    };
+      };
+    }
     if (callback) {
       callback(this);
     }
