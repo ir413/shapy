@@ -51,41 +51,38 @@ Translator.prototype.add = function(scene) {
       0,
       -Math.PI / 2
     );
-  console.log(this.cylinderX.position);
   this.cylinderX.overdraw = true;
   scene.add(this.cylinderX);
 
   // Y cylinder
   this.cylinderY = new THREE.Mesh(
       new THREE.CylinderGeometry(0, 0.2, 0.4, 50, 50, false), 
-      new THREE.MeshBasicMaterial({ color: 0xFF0000}));
+      new THREE.MeshBasicMaterial({ color: 0x00FF00}));
   this.cylinderY.position.set(
       this.object.data.pos.x,
       this.object.data.pos.y + this.object.data.size.y / 2 + 0.23,
       this.object.data.pos.z);
-  this.cylinderX.rotation.set(
+  this.cylinderY.rotation.set(
       0,
       0,
-      -Math.PI / 2
+      0
     );
-  console.log(this.cylinderY.position);
   this.cylinderY.overdraw = true;
   scene.add(this.cylinderY);
 
   // Z cylinder.  
   this.cylinderZ = new THREE.Mesh(
       new THREE.CylinderGeometry(0, 0.2, 0.4, 50, 50, false), 
-      new THREE.MeshBasicMaterial({ color: 0xFF0000}));
+      new THREE.MeshBasicMaterial({ color: 0x0000FF}));
   this.cylinderZ.position.set(
       this.object.data.pos.x,
       this.object.data.pos.y,
       this.object.data.pos.z + this.object.data.size.z / 2 + 0.23);
   this.cylinderZ.rotation.set(
       0,
-      0,
+      -Math.PI / 2,
       -Math.PI / 2
     );
-  console.log(this.cylinderZ.position);
   this.cylinderZ.overdraw = true;
   scene.add(this.cylinderZ);
 };
